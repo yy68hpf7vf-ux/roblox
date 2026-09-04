@@ -1,0 +1,7 @@
+std = "roblox"
+
+[lints]
+# The codebase uses `if x then a else b` expressions and string interpolation
+# throughout; both are Luau features selene understands but flags under some
+# older standard libraries.
+mixed_table = "allow"
