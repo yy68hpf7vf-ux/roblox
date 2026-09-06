@@ -31,24 +31,73 @@ the starting plaza.
 **Monetization.** Five gamepasses and five developer products, all optional, all
 stating exactly what they do. See [docs/MONETIZATION.md](docs/MONETIZATION.md).
 
-## Running it
+## Getting it running
 
-You need [Rojo](https://rojo.space).
+### 1. Get the code
 
 ```bash
-rojo serve                 # then connect from the Rojo plugin in Studio
-# or
-rojo build -o game.rbxl    # and open the file
+git clone https://github.com/yy68hpf7vf-ux/roblox.git
+cd roblox
+git checkout claude/roblox-simulator-game-1amidi
 ```
 
-Then in Studio: **Game Settings → Security → Enable Studio Access to API
-Services**, so DataStores work. Without it the game still runs — every player gets
-a working in-memory profile and the HUD tells them plainly that nothing is being
-saved.
+### 2. Install Rojo
 
-To sell anything, publish the place, create the passes and products on the Creator
-Dashboard, and paste the ids into `src/shared/Config/Monetization.lua`. Until then
-the store hides them rather than opening prompts that cannot resolve.
+Rojo turns this folder into a Roblox place file. Either:
+
+- Download the binary for your OS from
+  [the Rojo releases page](https://github.com/rojo-rbx/rojo/releases) and put it
+  on your PATH, or
+- Install [Rokit](https://github.com/rojo-rbx/rokit) (or Aftman) and run
+  `rokit install` here — `aftman.toml` already pins the versions.
+
+Check it worked: `rojo --version` should print 7.x.
+
+### 3. Build and open
+
+```bash
+rojo build -o game.rbxl
+```
+
+Double-click `game.rbxl`. Studio opens with the whole game in it. Press **Play**
+and you can mine immediately — the islands, shops and pads are all generated on
+the first server tick.
+
+If you would rather edit code and see it sync live, install the **Rojo** plugin
+from the Studio marketplace, run `rojo serve` in this folder, and hit Connect in
+the plugin instead.
+
+### 4. Turn on saving
+
+Straight out of the build, the HUD will tell you your progress is **not being
+saved**. That is correct and expected, not a bug — Roblox DataStores need two
+things, and a fresh local file has neither:
+
+1. **The place must be published.** In Studio: **File → Publish to Roblox As…**,
+   create a new experience. A local `.rbxl` has no place id, so DataStore calls
+   fail no matter what else you set.
+2. **API access must be on.** **File → Game Settings → Security → Enable Studio
+   Access to API Services.**
+
+Do both, restart the playtest, and the warning goes away. Until then every player
+gets a working in-memory profile so you can still test everything else.
+
+### 5. Test it like a real server
+
+The game is multiplayer — shared nodes, leaderboards, pets you can see on other
+players. In Studio: **Test → Clients and Servers → 2 players → Start**. That is
+the only way to catch anything server-authoritative.
+
+### 6. Turn on the store (optional)
+
+Nothing is for sale until you say so. On the
+[Creator Dashboard](https://create.roblox.com), create the passes and developer
+products, then paste each id into `src/shared/Config/Monetization.lua` where it
+currently says `assetId = 0`.
+
+Anything left at `0` is hidden from the Store window rather than opening a prompt
+that cannot resolve, and the server logs one warning at startup listing what is
+still unconfigured. See [docs/MONETIZATION.md](docs/MONETIZATION.md).
 
 ## Layout
 
