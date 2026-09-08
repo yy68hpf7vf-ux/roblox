@@ -1,5 +1,10 @@
 # Rift Miner Simulator
 
+> **This repo holds two complete games.** Rift Miner Simulator is documented below
+> and builds from this folder. **[Monster Motel](games/monster-motel/)** — a
+> base-building game about renting rooms to monsters and robbing the motel next
+> door — builds from `games/monster-motel/`. `tools/check.sh` checks both.
+
 A complete, working Roblox simulator game. Mine crystal seams, fill your backpack,
 sell it, buy a better pick, unlock a deeper zone, hatch pets that multiply
 everything, then rebirth and do it again faster.
@@ -159,7 +164,7 @@ difference between a server that holds thirty players and one that holds eight.
 tools/check.sh [path/to/luau]
 ```
 
-Four things, none of which need Studio open:
+Four things per game, none of which need Studio open:
 
 1. **Parse** — every source file compiles as Luau.
 2. **Requires** — all 192 `require()` calls resolve against the Rojo tree, and

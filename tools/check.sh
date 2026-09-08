@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs everything that can be checked without opening Studio:
+# Runs everything that can be checked without opening Studio, for both games:
 #
 #   1. every source file parses as Luau
 #   2. every require() resolves, and there are no cycles
@@ -17,39 +17,48 @@ LUAU="${1:-$(command -v luau || true)}"
 COMPILE="${LUAU%luau}luau-compile"
 status=0
 
-echo "== parse"
-if [ -x "$COMPILE" ]; then
-  fail=0
-  while IFS= read -r file; do
-    if ! out=$("$COMPILE" --binary "$file" 2>&1 >/dev/null) || [ -n "$out" ]; then
-      echo "  $file"; echo "$out"; fail=1
-    fi
-  done < <(find src -name '*.lua' | sort)
-  if [ $fail -eq 0 ]; then echo "  ok ($(find src -name '*.lua' | wc -l) files)"; else status=1; fi
-else
-  echo "  skipped (luau-compile not found)"
-fi
+# name:project-dir:balance-script
+GAMES=(
+  "Rift Miner:.:tools/balance.py"
+  "Monster Motel:games/monster-motel:games/monster-motel/tools/balance.py"
+)
 
-echo
-echo "== requires"
-python3 tools/check_requires.py || status=1
+for entry in "${GAMES[@]}"; do
+  IFS=: read -r name dir balance <<< "$entry"
+  echo "############ $name"
 
-echo
-echo "== config self-test"
-if [ -n "$LUAU" ] && [ -x "$LUAU" ]; then
-  python3 tools/selftest.py "$LUAU" | tail -3 || status=1
-else
-  echo "  skipped (luau not found)"
-fi
+  echo "== parse"
+  if [ -x "$COMPILE" ]; then
+    fail=0
+    while IFS= read -r file; do
+      if ! out=$("$COMPILE" --binary "$file" 2>&1 >/dev/null) || [ -n "$out" ]; then
+        echo "  $file"; echo "$out"; fail=1
+      fi
+    done < <(find "$dir/src" -name '*.lua' | sort)
+    count=$(find "$dir/src" -name '*.lua' | wc -l)
+    if [ $fail -eq 0 ]; then echo "  ok ($count files)"; else status=1; fi
+  else
+    echo "  skipped (luau-compile not found)"
+  fi
 
-echo
-echo "== balance"
-if python3 tools/balance.py > /dev/null; then
-  python3 tools/balance.py | tail -6
-else
-  echo "  FAILED"; status=1
-fi
+  echo "== requires"
+  python3 tools/check_requires.py "$dir" || status=1
 
-echo
+  echo "== config self-test"
+  if [ -n "$LUAU" ] && [ -x "$LUAU" ]; then
+    python3 tools/selftest.py "$LUAU" "$dir" | tail -2 || status=1
+  else
+    echo "  skipped (luau not found)"
+  fi
+
+  echo "== balance"
+  if python3 "$balance" > /dev/null; then
+    echo "  ok"
+  else
+    echo "  FAILED"; status=1
+  fi
+  echo
+done
+
 if [ $status -eq 0 ]; then echo "All checks passed."; else echo "Some checks FAILED."; fi
 exit $status

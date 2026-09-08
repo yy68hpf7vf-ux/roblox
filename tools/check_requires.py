@@ -12,7 +12,10 @@ Also reports require cycles, which in Luau surface as a confusing
 "requested module experienced an error while loading" rather than a stack trace
 pointing at the loop.
 
-    python3 tools/check_requires.py
+    python3 tools/check_requires.py [project-dir]
+
+`project-dir` defaults to the repo root (Rift Miner). Pass games/monster-motel to
+check the other project.
 """
 
 from __future__ import annotations
@@ -21,8 +24,9 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "src"
+REPO = Path(__file__).resolve().parent.parent
+PROJECT = REPO / sys.argv[1] if len(sys.argv) > 1 else REPO
+SRC = PROJECT / "src"
 
 # Mirrors default.project.json.
 ROOTS = {
@@ -96,13 +100,13 @@ def main() -> int:
             target = resolve(expr, owner, is_init)
 
             if target is None:
-                problems.append(f"{file.relative_to(ROOT)}: cannot resolve require({expr})")
+                problems.append(f"{file.relative_to(REPO)}: cannot resolve require({expr})")
                 continue
 
             resolved = index.get(target)
             if resolved is None:
                 problems.append(
-                    f"{file.relative_to(ROOT)}: require({expr}) -> {'.'.join(target)} does not exist"
+                    f"{file.relative_to(REPO)}: require({expr}) -> {'.'.join(target)} does not exist"
                 )
                 continue
 
@@ -131,7 +135,7 @@ def main() -> int:
             visit(node)
 
     for cycle in cycles:
-        names = " -> ".join(p.relative_to(ROOT).as_posix() for p in cycle)
+        names = " -> ".join(p.relative_to(REPO).as_posix() for p in cycle)
         problems.append(f"require cycle: {names}")
 
     total = sum(len(v) for v in edges.values())
@@ -141,7 +145,7 @@ def main() -> int:
             print(f"  {problem}")
         return 1
 
-    print(f"All {total} requires resolve. No cycles. ({len(edges)} files)")
+    print(f"All {total} requires resolve. No cycles. ({len(edges)} files in {PROJECT.name})")
     return 0
 
 
