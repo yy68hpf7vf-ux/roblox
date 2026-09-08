@@ -60,9 +60,35 @@ python3 tools/selftest.py <luau> games/monster-motel
 So a future "+2 carry speed" pass does not quietly ship. It fails at a terminal,
 with a message naming the item and the field.
 
+## Signature guests
+
+Three guests are sold outright as gamepasses. They are the strongest thing in the
+store and the most likely place for a raiding game to go wrong, so they follow
+three rules.
+
+**They are beside the ladder, not on top of it.** The best Signature pays
+$160K/s. The best Mythic pays $210K/s, and Celebrities pay up to $2.5M/s. Both of
+those are earned only — a Mythic comes off your own arrivals road, a Celebrity has
+to be carried home from the square in front of everybody. **The two best tiers in
+the game cannot be bought at any price**, and the self-test fails if a config edit
+ever changes that.
+
+**They can be stolen.** A Signature standing in room four is an ordinary guest in
+every respect a thief cares about. Selling theft immunity would be selling an
+advantage in a raid, which is the line this whole document is about.
+
+**Losing one does not lose the purchase.** The pass buys a permanent entitlement,
+not an object. If you end a night without your Signature, `SignatureService` hands
+it back at sunrise — and the thief keeps the copy they carried home. The raid was
+real for both sides, and nobody is out of pocket for a bad night.
+
+That last rule is deliberately delayed until sunrise rather than instant. Handing
+it straight back would make stealing one pointless and would quietly be immunity
+after all.
+
 ## What the store does sell
 
-Speed of your own progress, and nothing else:
+Speed of your own progress, and guests that never top the free ones:
 
 - **2x Cash** and **VIP** — more rent from your own guests
 - **Auto Collect** — removes the walk to your own front desk
@@ -70,6 +96,7 @@ Speed of your own progress, and nothing else:
 - **Night Owl** — earns while you are offline
 - **Express Lane** — guests arrive twice as often, at **exactly the same odds**
 - **Cash drops** and a **2x rent boost** — consumables, sized against your own rent
+- **Signature guests** — strong, permanent, stealable, and beaten by free content
 
 A player who buys all of it has a richer motel. They break your door in the same
 number of seconds, run home at the same speed, and are caught at the same range as

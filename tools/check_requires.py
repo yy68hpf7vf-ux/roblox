@@ -28,11 +28,13 @@ REPO = Path(__file__).resolve().parent.parent
 PROJECT = REPO / sys.argv[1] if len(sys.argv) > 1 else REPO
 SRC = PROJECT / "src"
 
-# Mirrors default.project.json.
+# Mirrors default.project.json. A key that a given project does not use is simply
+# never looked up.
 ROOTS = {
     "shared": ("ReplicatedStorage", "Shared"),
     "server": ("ServerScriptService", "Server"),
     "client": ("StarterPlayer", "StarterPlayerScripts", "Client"),
+    "replicatedfirst": ("ReplicatedFirst", "Loading"),
 }
 
 # Locals that hold a service lookup rather than a script-relative path.
@@ -46,6 +48,11 @@ def node_path(file: Path) -> tuple[str, ...]:
     """The Instance path a source file becomes once Rojo has synced it."""
     relative = file.relative_to(SRC)
     side = relative.parts[0]
+    if side not in ROOTS:
+        raise SystemExit(
+            f"check_requires: src/{side}/ is not in ROOTS. Add it there and to "
+            "default.project.json, or the tree it maps to cannot be resolved."
+        )
     base = ROOTS[side]
     rest = relative.parts[1:]
 

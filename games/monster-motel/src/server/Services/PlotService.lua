@@ -146,6 +146,19 @@ function PlotService.refreshSign(player: Player)
 	plot.nameLabel.Text = `{player.DisplayName}'s Motel`
 	plot.rentLabel.Text = `${Format.short(rent)}/s  ·  {housed}/{capacity} rooms  ·  {profile.renovations}★`
 
+	-- The lit board. Readable from across the square, which is the point: a raider
+	-- should be able to pick a target without walking up to every door.
+	local free = capacity - housed
+	if free > 0 then
+		plot.vacancyLabel.Text = "VACANCY"
+		plot.vacancyLabel.TextColor3 = Color3.fromRGB(120, 255, 190)
+		plot.vacancyLight.Color = Color3.fromRGB(120, 255, 190)
+	else
+		plot.vacancyLabel.Text = "NO VACANCY"
+		plot.vacancyLabel.TextColor3 = Color3.fromRGB(255, 108, 128)
+		plot.vacancyLight.Color = Color3.fromRGB(255, 108, 128)
+	end
+
 	local doorTitle = plot.door:FindFirstChild("Label")
 	if doorTitle then
 		local title = doorTitle:FindFirstChild("DoorTitle") :: TextLabel?
@@ -167,7 +180,9 @@ end
 
 local function markVacant(plot: Plot)
 	plot.nameLabel.Text = "VACANT PLOT"
-	plot.rentLabel.Text = "Walk up to claim"
+	plot.rentLabel.Text = "Nobody has claimed this one"
+	plot.vacancyLabel.Text = "VACANCY"
+	plot.vacancyLabel.TextColor3 = Color3.fromRGB(120, 255, 190)
 	clearPlot(plot)
 end
 
@@ -211,7 +226,7 @@ function PlotService.spawnCFrame(player: Player): CFrame?
 	if not plot then
 		return nil
 	end
-	return plot.origin * CFrame.new(0, 5, 16) * CFrame.Angles(0, math.pi, 0)
+	return plot.origin * CFrame.new(0, 5, 22) * CFrame.Angles(0, math.pi, 0)
 end
 
 function PlotService.start(built: WorldBuilder.Built)

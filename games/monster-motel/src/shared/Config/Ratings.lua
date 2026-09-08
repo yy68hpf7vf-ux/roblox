@@ -103,6 +103,8 @@ Ratings.PaybackSeconds = {
 	Legendary = 150,
 	Mythic = 190,
 	Celebrity = 0,
+	-- Signatures come from a gamepass and are never priced in Cash.
+	Signature = 0,
 }
 
 function Ratings.priceFor(guest: Guests.Guest): number
@@ -123,7 +125,7 @@ end
 function Ratings.odds(rating: Rating): { { rarity: string, chance: number } }
 	local total = Ratings.totalWeight(rating)
 	local out = {}
-	for _, rarity in Guests.RarityOrder do
+	for _, rarity in Guests.LadderOrder do
 		local weight = rating.weights[rarity]
 		if weight then
 			table.insert(out, { rarity = rarity, chance = weight / total })
@@ -133,11 +135,15 @@ function Ratings.odds(rating: Rating): { { rarity: string, chance: number } }
 end
 
 --[[ Rolls one rarity for an arrivals slot. `rng` is passed in so the server owns
-     a single generator and nothing player-specific can seed it. ]]
+     a single generator and nothing player-specific can seed it.
+
+     Walks the ladder rather than every rarity, so Celebrity and Signature can
+     never be rolled onto the road even if a weight for one were added by
+     mistake. ]]
 function Ratings.rollRarity(rating: Rating, rng: Random): string
 	local ticket = rng:NextInteger(1, Ratings.totalWeight(rating))
 	local cursor = 0
-	for _, rarity in Guests.RarityOrder do
+	for _, rarity in Guests.LadderOrder do
 		local weight = rating.weights[rarity]
 		if weight then
 			cursor += weight

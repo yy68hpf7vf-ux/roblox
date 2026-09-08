@@ -220,7 +220,7 @@ do
 	-- Within a rarity, rent must climb. Across rarities, the cheapest of a tier
 	-- must beat the dearest of the tier below, or rarity would not mean anything.
 	local previousTop = 0
-	for _, rarity in Guests.RarityOrder do
+	for _, rarity in Guests.LadderOrder do
 		local pool = Guests.ByRarity[rarity]
 		check(#pool > 0, `Guests: no guests of rarity {rarity}`)
 
@@ -258,8 +258,8 @@ for index, rating in Ratings.List do
 		check(Guests.ByRarity[entry.rarity] ~= nil, `Ratings: {rating.name} references unknown rarity "{entry.rarity}"`)
 		check(entry.chance > 0, `Ratings: {rating.name} lists {entry.rarity} at zero chance`)
 		check(
-			entry.rarity ~= "Celebrity",
-			`Ratings: {rating.name} can roll a Celebrity -- those must only come from the town square event`
+			not Guests.isOffRoad(entry.rarity),
+			`Ratings: {rating.name} can roll a {entry.rarity} -- those never appear on the arrivals road`
 		)
 		sum += entry.chance
 	end
@@ -282,7 +282,7 @@ do
 	-- Rarer guests must take longer to pay for themselves, or there would be no
 	-- decision in buying one.
 	local previous = 0
-	for _, rarity in Guests.RarityOrder do
+	for _, rarity in Guests.LadderOrder do
 		if rarity ~= "Celebrity" then
 			local payback = Ratings.PaybackSeconds[rarity]
 			check(payback ~= nil, `Ratings: no payback time for {rarity}`)
@@ -293,7 +293,7 @@ do
 	equal(Ratings.PaybackSeconds.Celebrity, 0, "Ratings: celebrities are never priced -- they are not for sale")
 
 	for _, guest in Guests.List do
-		if guest.rarity ~= "Celebrity" then
+		if not Guests.isOffRoad(guest.rarity) then
 			check(Ratings.priceFor(guest) > 0, `Ratings: {guest.id} has no price`)
 		end
 	end
@@ -406,6 +406,85 @@ do
 	-- A renovation is worth at least one Star, so this is a floor on the count.
 	check(totalCost < 3000, `Star Shop: maxing everything costs {totalCost} Stars, which is out of reach`)
 	print(`  (maxing the Star Shop costs {totalCost} Stars)`)
+end
+
+section("Signature guests")
+do
+	local signatures = Guests.ByRarity.Signature or {}
+	check(#signatures > 0, "Signature: no Signature guests defined")
+
+	-- Every Signature must be buyable, and every buyable one must exist.
+	local entitled = {}
+	for _, pass in Monetization.Gamepasses do
+		if pass.signatureGuest then
+			local guest = Guests.get(pass.signatureGuest)
+			check(guest ~= nil, `Signature: pass "{pass.id}" points at unknown guest "{pass.signatureGuest}"`)
+			if guest then
+				equal(
+					guest.rarity,
+					"Signature",
+					`Signature: pass "{pass.id}" sells {guest.id}, which is not a Signature guest`
+				)
+			end
+			check(entitled[pass.signatureGuest] == nil, `Signature: two passes both sell "{pass.signatureGuest}"`)
+			entitled[pass.signatureGuest] = pass.id
+		end
+	end
+
+	for _, guest in signatures do
+		check(entitled[guest.id] ~= nil, `Signature: {guest.id} exists but no gamepass sells it`)
+	end
+
+	-- Never on the road, never in the square.
+	for _, rating in Ratings.List do
+		check(
+			rating.weights.Signature == nil,
+			`Signature: {rating.name} has a Signature weight -- they are gamepass-only`
+		)
+	end
+	for _, guest in Guests.Celebrities do
+		check(guest.rarity == "Celebrity", "Signature: a Signature leaked into the celebrity pool")
+	end
+
+	-- The headline claim the store makes: the best guests are not for sale.
+	local bestSignature, bestMythic, bestCelebrity = 0, 0, 0
+	for _, guest in signatures do
+		bestSignature = math.max(bestSignature, guest.rent)
+	end
+	for _, guest in Guests.ByRarity.Mythic do
+		bestMythic = math.max(bestMythic, guest.rent)
+	end
+	for _, guest in Guests.Celebrities do
+		bestCelebrity = math.max(bestCelebrity, guest.rent)
+	end
+
+	check(
+		bestSignature < bestMythic,
+		`Signature: the best purchasable guest (${bestSignature}/s) out-earns the best Mythic (${bestMythic}/s), `
+			.. "which breaks the promise that the top tiers are not for sale"
+	)
+	check(bestMythic < bestCelebrity, "Signature: Celebrities should still be the best guests in the game")
+
+	-- And they should be worth buying: better than anything below Mythic.
+	local bestLegendary = 0
+	for _, guest in Guests.ByRarity.Legendary do
+		bestLegendary = math.max(bestLegendary, guest.rent)
+	end
+	check(
+		bestSignature > bestLegendary,
+		"Signature: the best purchasable guest does not beat the best Legendary, so it is not worth buying"
+	)
+
+	-- Ranked above everything, so a bulk release can never sweep a purchase away.
+	equal(
+		Guests.rarityRank("Signature"),
+		#Guests.RarityOrder,
+		"Signature: must rank highest so releaseBelow can never delete a purchased guest"
+	)
+
+	print(
+		`  (best Signature ${bestSignature}/s < best Mythic ${bestMythic}/s < best Celebrity ${bestCelebrity}/s)`
+	)
 end
 
 section("Cash upgrades")

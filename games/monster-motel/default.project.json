@@ -2,21 +2,24 @@
   "name": "Monster Motel",
   "tree": {
     "$className": "DataModel",
-
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "Shared": {
         "$path": "src/shared"
       }
     },
-
+    "ReplicatedFirst": {
+      "$className": "ReplicatedFirst",
+      "Loading": {
+        "$path": "src/replicatedfirst"
+      }
+    },
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "Server": {
         "$path": "src/server"
       }
     },
-
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
@@ -26,7 +29,6 @@
         }
       }
     },
-
     "Workspace": {
       "$className": "Workspace",
       "$properties": {
@@ -34,19 +36,25 @@
         "StreamingEnabled": true
       }
     },
-
     "Lighting": {
       "$className": "Lighting",
       "$properties": {
-        "Ambient": [70, 66, 82],
-        "OutdoorAmbient": [110, 106, 128],
+        "Ambient": [
+          70,
+          66,
+          82
+        ],
+        "OutdoorAmbient": [
+          110,
+          106,
+          128
+        ],
         "Brightness": 2,
         "ClockTime": 15,
         "GlobalShadows": true,
         "Technology": "ShadowMap"
       }
     },
-
     "SoundService": {
       "$className": "SoundService",
       "$properties": {

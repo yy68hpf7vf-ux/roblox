@@ -12,9 +12,23 @@
 
 	Celebrities never appear on the road. They arrive once every ten minutes in the
 	Town Square, in front of everyone, and whoever walks one home keeps it.
+
+	Signature guests are the Robux ones. Three things are deliberately true of them:
+
+	  * They sit beside the ladder rather than on top of it. A Signature pays more
+	    than any Legendary, but **the best guests in the game are not for sale** --
+	    the top Mythic out-earns every Signature, and Celebrities are worth several
+	    times more again and can only be caught in the square.
+	  * They can be stolen, exactly like every other guest. Buying one does not buy
+	    theft immunity, because that would be buying an advantage in a raid.
+	  * Losing one does not lose the purchase. The gamepass is a permanent
+	    entitlement, so a stolen Signature can be re-summoned once the night ends.
+	    The thief keeps the copy they carried home and you get yours back -- see
+	    SignatureService.
 ]]
 
-export type Rarity = "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary" | "Mythic" | "Celebrity"
+export type Rarity =
+	"Common" | "Uncommon" | "Rare" | "Epic" | "Legendary" | "Mythic" | "Celebrity" | "Signature"
 
 export type Guest = {
 	id: string,
@@ -27,7 +41,15 @@ export type Guest = {
 
 local Guests = {}
 
-Guests.RarityOrder = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Celebrity" }
+--[[ Ranking order, lowest first. Signature sits at the top so a bulk release can
+     never sweep a purchased guest away; it is otherwise off the progression
+     ladder, which runs Common -> Celebrity. ]]
+Guests.RarityOrder =
+	{ "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Celebrity", "Signature" }
+
+--[[ The rarities that form the earned progression ladder, in order. Signature is
+     excluded on purpose: it is bought, not progressed into. ]]
+Guests.LadderOrder = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Celebrity" }
 
 Guests.RarityColor = {
 	Common = Color3.fromRGB(176, 182, 192),
@@ -37,6 +59,7 @@ Guests.RarityColor = {
 	Legendary = Color3.fromRGB(255, 186, 74),
 	Mythic = Color3.fromRGB(255, 96, 132),
 	Celebrity = Color3.fromRGB(255, 236, 140),
+	Signature = Color3.fromRGB(120, 232, 255),
 } :: { [string]: Color3 }
 
 Guests.List = {
@@ -93,6 +116,12 @@ Guests.List = {
 	{ id = "djbonepile", name = "DJ Bonepile", rarity = "Celebrity", rent = 1300000, color = Color3.fromRGB(255, 246, 190), quip = "The complaints ARE the set list." },
 	{ id = "screamingtenor", name = "The Screaming Tenor", rarity = "Celebrity", rent = 1800000, color = Color3.fromRGB(255, 232, 150), quip = "Rehearses at 3am. Nobody dares complain." },
 	{ id = "theinfluencer", name = "The Influencer", rarity = "Celebrity", rent = 2500000, color = Color3.fromRGB(255, 250, 210), quip = "Filming your motel right now. Rent is exposure." },
+
+	-- Signature -- gamepass only. Never on the arrivals road, never in the square.
+	-- Each pays more than any Legendary and less than the best Mythic, on purpose.
+	{ id = "sig_nightmanager", name = "The Night Manager", rarity = "Signature", rent = 30000, color = Color3.fromRGB(108, 200, 255), quip = "Runs the desk from midnight to six. Never once blinked." },
+	{ id = "sig_madamevacancy", name = "Madame Vacancy", rarity = "Signature", rent = 75000, color = Color3.fromRGB(130, 224, 255), quip = "Books every room and occupies none of them." },
+	{ id = "sig_cousin", name = "The Owner's Cousin", rarity = "Signature", rent = 160000, color = Color3.fromRGB(160, 244, 255), quip = "Nobody hired them. Nobody is going to bring it up." },
 } :: { Guest }
 
 Guests.ById = {} :: { [string]: Guest }
@@ -146,5 +175,12 @@ function Guests.sortByRent(ids: { string }): { string }
 end
 
 Guests.Celebrities = Guests.ByRarity.Celebrity
+Guests.Signatures = Guests.ByRarity.Signature
+
+--[[ True for guests that can never turn up on the arrivals road. Celebrities come
+     from the square; Signatures come from a gamepass. ]]
+function Guests.isOffRoad(rarity: string): boolean
+	return rarity == "Celebrity" or rarity == "Signature"
+end
 
 return Guests

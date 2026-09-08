@@ -28,16 +28,25 @@ is no `.rbxl` to hand-edit.
 
 ## What's in it
 
-**42 guests across 7 rarities**, from the Sock Gremlin to Guest Zero. Four
+**45 guests across 8 rarities**, from the Sock Gremlin to Guest Zero. Four
 Celebrities that never appear in a shop — they only arrive in the square, in front
-of everybody.
+of everybody — and three Signature guests sold for Robux that are strong, stealable,
+and still beaten by the best free ones.
 
 **A real raid**, with a break timer on the door, a carried guest you can see on the
 thief's back, and a chase that ends when the owner catches up. A guest in transit
 belongs to nobody's save until it lands, so it can never be duplicated or lost.
 
 **A day/night cycle** the whole server shares. Five minute days, ninety second
-nights, and a clock on the HUD that everything else keys off.
+nights, and a clock on the HUD that everything else keys off. At Lights Out the
+whole town switches over at once — every lamp, window and neon sign comes on and
+the fog closes to 620 studs, so you cannot read a distant motel sign and have to
+commit to a direction.
+
+**A town, not a testbed.** A ring road with dashed lines and street lamps, twelve
+two-storey motels with walkways, stairs, lit windows and a **VACANCY / NO VACANCY**
+board readable from across the square, and a central plaza with a stage, benches
+and a fountain of light where the celebrity lands.
 
 **The Celebrity Arrival** every ten minutes: a guest worth more than anything the
 road will ever offer, dropped in public with a countdown. Anyone can tag the
@@ -57,8 +66,15 @@ for good. The game is not self-explanatory without it.
 ends when it says it does, three daily quests that reward defending as often as
 raiding, codes, and global leaderboards on signs in the square.
 
-**Monetization** — six gamepasses and five products, all optional, none of which
-touch raiding. See [docs/FAIRNESS.md](docs/FAIRNESS.md).
+**Monetization** — nine gamepasses and five products, all optional, none of which
+touch raiding. Three of the passes are Signature guests: permanent, strong, and
+still out-earned by the best Mythic. See [docs/FAIRNESS.md](docs/FAIRNESS.md).
+
+**The bits every published game needs** — a loading screen from ReplicatedFirst
+that hides the default one and teaches the loop while it waits, the VIP chat tag
+the store actually promises, sky and atmosphere, and a rescue for anyone who walks
+off the edge of the world (a teleport home, not a death, so a thief mid-carry does
+not lose their raid to a misstep).
 
 ## Running it
 
@@ -85,7 +101,7 @@ The town has 12 plots, so set MaxPlayers to 12 or raise `WorldBuilder.PlotCount`
 ```bash
 tools/check.sh                                          # from the repo root, both games
 python3 tools/check_requires.py games/monster-motel     # require graph
-python3 tools/selftest.py <luau> games/monster-motel    # 1,062 config assertions
+python3 tools/selftest.py <luau> games/monster-motel    # 1,126 config assertions
 python3 games/monster-motel/tools/balance.py            # progression simulation
 ```
 
@@ -101,6 +117,9 @@ asserts two things specific to this game:
   would fire the whole tutorial on the first frame and hand out every reward.
 - **A maxed door is still a door.** The worst-case break time has to fit inside
   half a night, or a fully upgraded motel would be unraidable.
+- **The best guests are not for sale.** Best Signature < best Mythic < best
+  Celebrity, every Signature has exactly one pass selling it, and no rating can
+  roll one onto the arrivals road.
 
 It also caught a real bug during development: a new profile started with no cash
 and no guests, which meant no rent, which meant no way to ever buy a guest. New
@@ -118,6 +137,10 @@ src/server/Services/   One responsibility each
   NightService         The clock everything keys off
   EventService         The Celebrity Arrival
   ObjectiveService     The one-at-a-time tutorial chip
+  SignatureService     Robux guests, and giving them back after a bad night
+  AmbienceService      Sky, fog, and switching the whole town on at Lights Out
+  SafetyService        Nobody falls out of the world
+src/replicatedfirst/   The loading screen
 src/server/World/      Builds the town at runtime
 src/client/            HUD, six windows, the raid controller
 tools/                 Self-test assertions and the balance simulation

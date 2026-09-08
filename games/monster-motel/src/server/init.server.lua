@@ -21,7 +21,9 @@ local Net = require(Shared.Net)
 
 local Services = script.Services
 local ActionService = require(Services.ActionService)
+local AmbienceService = require(Services.AmbienceService)
 local ArrivalService = require(Services.ArrivalService)
+local ChatTagService = require(Services.ChatTagService)
 local DataService = require(Services.DataService)
 local EventService = require(Services.EventService)
 local LeaderboardService = require(Services.LeaderboardService)
@@ -34,6 +36,8 @@ local PlotService = require(Services.PlotService)
 local QuestService = require(Services.QuestService)
 local RentService = require(Services.RentService)
 local RewardService = require(Services.RewardService)
+local SafetyService = require(Services.SafetyService)
+local SignatureService = require(Services.SignatureService)
 local StateService = require(Services.StateService)
 local TheftService = require(Services.TheftService)
 
@@ -51,6 +55,9 @@ PlotService.start(world)
 StateService.start()
 MovementService.start()
 ObjectiveService.start()
+-- SignatureService also reacts to a profile load and to a pass appearing, so it
+-- has to be listening before DataService and PassService start.
+SignatureService.start()
 
 --[[ Put a player in front of their own motel. A character can spawn before the
      profile arrives, so this waits rather than dropping everyone in the square
@@ -106,6 +113,12 @@ RewardService.start()
 MonetizationService.start()
 ActionService.start()
 LeaderboardService.start()
+ChatTagService.start()
+SafetyService.start()
+
+-- Cosmetic, and last of the world systems: it reads the night state and changes
+-- nothing, so it can safely start after everything that owns state.
+AmbienceService.start(world)
 
 -- Last: starting the clock fires the first phase change.
 NightService.start()

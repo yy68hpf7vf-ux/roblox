@@ -6,6 +6,18 @@
 	will have felt for themselves before they see the price -- that is what makes
 	someone buy, far more reliably than a countdown does.
 
+	Signature guests are sold outright, and they are the case worth explaining. They
+	are strong -- each pays more than any Legendary -- but they are beside the
+	ladder, not on top of it: the best Mythic out-earns all of them and Celebrities
+	are worth several times more again. **The two best tiers in the game cannot be
+	bought at any price.**
+
+	They are also stealable, like every other guest, because a purchased immunity
+	would be an advantage in a raid. What the purchase actually buys is a permanent
+	entitlement rather than an object: lose one to a thief and it comes back to you
+	at sunrise, while the thief keeps the copy they earned. Nobody loses Robux to a
+	bad night, and nobody buys their way out of being raided.
+
 	The one hard line: **nothing sold here touches theft.** Carry speed, lock break
 	time, tag range, the new-player grace window, the steal cooldown and the night
 	length are constants in GameConfig, identical for everyone in the server. You
@@ -37,6 +49,10 @@ export type Gamepass = {
 	offlineEarnings: boolean?,
 	-- Unlocks the VIP Lounge, which holds guests without using a room.
 	vipLounge: boolean?,
+	-- Permanently entitles the owner to this Signature guest. It behaves like any
+	-- other guest once it is in the motel -- it can be stolen -- but the
+	-- entitlement is permanent, so a stolen one is re-summoned at sunrise.
+	signatureGuest: string?,
 }
 
 export type Product = {
@@ -93,6 +109,33 @@ Monetization.Gamepasses = {
 		desc = "Your motel keeps earning while you are offline, up to 8 hours banked.",
 		offlineEarnings = true,
 	},
+	-- ---------------------------------------------------------------- signatures
+	-- Three guests sold outright. Each pays more than any Legendary and less than
+	-- the best Mythic, so buying accelerates a motel without ever out-earning what
+	-- the game gives away. The two strongest tiers -- Mythic and Celebrity -- are
+	-- not for sale at any price.
+	{
+		id = "sig_nightmanager",
+		assetId = 0,
+		name = "The Night Manager",
+		desc = "A Signature guest paying $30K/s, yours permanently. Can be stolen like anyone else -- if that happens you get them back at sunrise.",
+		signatureGuest = "sig_nightmanager",
+	},
+	{
+		id = "sig_madamevacancy",
+		assetId = 0,
+		name = "Madame Vacancy",
+		desc = "A Signature guest paying $75K/s, yours permanently. Can be stolen like anyone else -- if that happens you get them back at sunrise.",
+		signatureGuest = "sig_madamevacancy",
+	},
+	{
+		id = "sig_cousin",
+		assetId = 0,
+		name = "The Owner's Cousin",
+		desc = "A Signature guest paying $160K/s, yours permanently. Can be stolen like anyone else -- if that happens you get them back at sunrise.",
+		signatureGuest = "sig_cousin",
+	},
+
 	{
 		id = "expresslane",
 		assetId = 0,
