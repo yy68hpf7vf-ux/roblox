@@ -118,6 +118,16 @@ local handlers: { [string]: Handler } = {
 		return ShopService.buySafe(player, profile)
 	end,
 
+	-- A levelled Cash upgrade: Running Shoes, Room Service, Neon Sign, Night
+	-- Porter. Distinct from buyUpgrade, which spends Stars in the Star Shop.
+	buyMotelUpgrade = function(player, profile, payload)
+		local id = str(payload, "id")
+		if not id then
+			return false, "Missing id."
+		end
+		return ShopService.buyUpgrade(player, profile, id)
+	end,
+
 	-- ---------------------------------------------------------- raiding
 	startBreak = function(player, _profile, payload)
 		return TheftService.startBreak(player, payload.plot)

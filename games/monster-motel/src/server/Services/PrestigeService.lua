@@ -79,7 +79,7 @@ function PrestigeService.buyUpgrade(player: Player, profile: Profile, upgradeId:
 		return false, "No such upgrade."
 	end
 
-	local level = profile.upgrades[upgradeId] or 0
+	local level = profile.starShop[upgradeId] or 0
 	if level >= upgrade.maxLevel then
 		return false, `{upgrade.name} is already at its maximum.`
 	end
@@ -89,7 +89,7 @@ function PrestigeService.buyUpgrade(player: Player, profile: Profile, upgradeId:
 		return false, `{upgrade.name} costs {cost} Stars. You have {profile.stars}.`
 	end
 
-	profile.upgrades[upgradeId] = level + 1
+	profile.starShop[upgradeId] = level + 1
 	EconomyService.markDirty(player)
 	return true, `{upgrade.name} is now level {level + 1}.`
 end
@@ -102,7 +102,7 @@ function PrestigeService.view(player: Player, profile: Profile): { [string]: any
 
 	local upgrades = {}
 	for _, upgrade in Prestige.Upgrades do
-		local level = profile.upgrades[upgrade.id] or 0
+		local level = profile.starShop[upgrade.id] or 0
 		local maxed = level >= upgrade.maxLevel
 		table.insert(upgrades, {
 			id = upgrade.id,

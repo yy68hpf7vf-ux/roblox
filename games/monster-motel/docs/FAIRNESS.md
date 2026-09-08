@@ -13,15 +13,34 @@ Every number a raid depends on lives in `src/shared/Config/GameConfig.lua` as a
 plain constant. Nothing multiplies them, nothing scales them per player, and no
 code path reads a gamepass or a product when deciding any of them.
 
-| Constant | What it decides |
-|---|---|
-| `CarryWalkSpeed` | How fast you move while carrying a stolen guest |
-| `NormalWalkSpeed` | How fast everyone moves otherwise |
-| `TagRange` | How close a victim must get to make a thief drop their guest |
-| `StealCooldownPerVictim` | How many guests one thief may take from one motel per night |
-| `NewPlayerGrace` | How long a new player cannot be robbed at all |
-| `MinimumGuestsToRob` | The floor below which nobody can be robbed |
-| `DayDuration` / `NightDuration` | When raiding is possible |
+| Constant | What it decides | Can anything change it? |
+|---|---|---|
+| `CarryWalkSpeed` | How fast you move while carrying a stolen guest | **No. Nothing, at any price, in any currency.** |
+| `TagRange` | How close a victim must get to make a thief drop their guest | No |
+| `StealCooldownPerVictim` | How many guests one thief may take from one motel per night | No |
+| `NewPlayerGrace` | How long a new player cannot be robbed at all | No |
+| `MinimumGuestsToRob` | The floor below which nobody can be robbed | No |
+| `DayDuration` / `NightDuration` | When raiding is possible | No |
+| `NormalWalkSpeed` | How fast you move the rest of the time | Running Shoes, bought with **Cash** |
+
+## Running Shoes, and why they are the exception
+
+Running Shoes raise your normal walk speed from 16 to 24 across eight levels. That
+is a real advantage and it is meant to be -- it is one of the things Cash is for.
+
+Two properties keep it out of the fairness problem:
+
+1. **It is bought with Cash, not Robux.** Every player can have all eight levels.
+   Nothing in the Robux store sells speed, and the self-test enforces that.
+2. **It does not apply while carrying.** `MovementService` is the only code in the
+   game that writes `WalkSpeed`, and when a player is carrying a guest it writes
+   `CarryWalkSpeed` flat, without reading their profile. Shoes get you to a door
+   and get you home after a chase. They never help you outrun the person whose
+   guest is on your back.
+
+That second point is the load-bearing one. A chase is the moment the game is
+actually about, and it resolves the same way for a player on their first night as
+for one who has bought everything.
 
 Door break time is the one number a player can move, and it reads **only the
 defender's** lock level and Deadbolt level. The thief's rating, renovations,

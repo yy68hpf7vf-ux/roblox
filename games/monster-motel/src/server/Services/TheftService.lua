@@ -32,6 +32,7 @@ local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
 local GuestService = require(script.Parent.GuestService)
 local NightService = require(script.Parent.NightService)
+local MovementService = require(script.Parent.MovementService)
 local PlotService = require(script.Parent.PlotService)
 local QuestService = require(script.Parent.QuestService)
 local Remote = require(script.Parent.Remote)
@@ -98,18 +99,12 @@ local function rootOf(player: Player): BasePart?
 	return character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 end
 
-local function humanoidOf(player: Player): Humanoid?
-	local character = player.Character
-	return character and character:FindFirstChildOfClass("Humanoid")
-end
-
+--[[ Carrying speed is owned by MovementService, which is the only place in the
+     game that writes WalkSpeed. Carrying is a flat constant there: a thief with
+     every upgrade and every pass runs home at exactly the speed a new player
+     does. ]]
 local function setCarrySpeed(player: Player, slow: boolean)
-	local humanoid = humanoidOf(player)
-	if humanoid then
-		-- A flat constant both ways. Nothing scales it, so a thief with every
-		-- pass in the store runs home at exactly the speed a new player does.
-		humanoid.WalkSpeed = if slow then GameConfig.CarryWalkSpeed else GameConfig.NormalWalkSpeed
-	end
+	MovementService.setCarrying(player, slow)
 end
 
 local function attachCarryModel(player: Player, guestId: string): Model?
@@ -261,6 +256,19 @@ function TheftService.startBreak(thief: Player, plotIndex: unknown): (boolean, s
 	end
 
 	breaking[thief] = { plotIndex = index, elapsed = 0 }
+
+	-- Night Porter is the early-warning upgrade: without it the owner only finds
+	-- out when the door actually opens, which is usually too late to do anything.
+	local porter = EconomyService.porterLevel(victimProfile)
+	if porter >= 1 then
+		Remote.notify(owner, `Night Porter: {thief.DisplayName} is working on your door.`, "warn")
+		Remote.effect(owner, "porterAlert", {
+			thief = thief.Name,
+			mark = porter >= 2,
+			seconds = EconomyService.breakSeconds(victimProfile),
+		})
+	end
+
 	return true, ""
 end
 
@@ -509,7 +517,8 @@ function TheftService.start()
 		player.CharacterAdded:Connect(function(character)
 			local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
 			if humanoid then
-				humanoid.WalkSpeed = GameConfig.NormalWalkSpeed
+				-- Speed is MovementService's job; this only has to notice a death
+				-- so a carried guest goes back rather than vanishing.
 				humanoid.Died:Connect(function()
 					TheftService.drop(player, "You dropped them.")
 				end)

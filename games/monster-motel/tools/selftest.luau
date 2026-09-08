@@ -57,6 +57,8 @@ local Guests = shared("Config", "Guests")
 local Ratings = shared("Config", "Ratings")
 local Rooms = shared("Config", "Rooms")
 local Prestige = shared("Config", "Prestige")
+local Upgrades = shared("Config", "Upgrades")
+local Objectives = shared("Config", "Objectives")
 local Monetization = shared("Config", "Monetization")
 local Quests = shared("Config", "Quests")
 local Rewards = shared("Config", "Rewards")
@@ -123,6 +125,32 @@ do
 	end
 
 	check(#Monetization.ForbiddenFields > 0, "Monetization.ForbiddenFields must not be empty")
+
+	-- Cash upgrades are earnable by everyone, so they may raise normal walk speed.
+	-- They still may not touch the numbers a raid turns on. Running Shoes is the
+	-- only movement upgrade and it must be capped well under a runaway value.
+	local movementUpgrades = 0
+	for _, upgrade in Upgrades.List do
+		check(
+			upgrade.id ~= "carry" and not string.find(string.lower(upgrade.id), "carry"),
+			`Upgrades: "{upgrade.id}" looks like a carry-speed upgrade, which must never exist`
+		)
+		if upgrade.unit == "walk speed" then
+			movementUpgrades += 1
+			local top = GameConfig.NormalWalkSpeed + upgrade.perLevel * upgrade.maxLevel
+			check(
+				top <= GameConfig.NormalWalkSpeed * 2,
+				`Upgrades: {upgrade.id} tops out at {top} walk speed, more than double the base`
+			)
+			-- The whole point: even fully upgraded, you are slower carrying.
+			check(
+				GameConfig.CarryWalkSpeed < GameConfig.NormalWalkSpeed,
+				"Carrying must be slower than the base walk speed"
+			)
+			print(`  (walk speed {GameConfig.NormalWalkSpeed} -> {top} fully upgraded; carrying is always {GameConfig.CarryWalkSpeed})`)
+		end
+	end
+	check(movementUpgrades <= 1, "There should be exactly one movement upgrade, so the cap is easy to reason about")
 
 	-- A carried player must be slower than a free one, or theft has no risk.
 	check(
@@ -380,6 +408,80 @@ do
 	print(`  (maxing the Star Shop costs {totalCost} Stars)`)
 end
 
+section("Cash upgrades")
+for _, upgrade in Upgrades.List do
+	check(upgrade.maxLevel > 0, `Upgrades: {upgrade.id} cannot be levelled`)
+	check(upgrade.perLevel > 0, `Upgrades: {upgrade.id} does nothing per level`)
+	check(#upgrade.name > 0 and #upgrade.desc > 0, `Upgrades: {upgrade.id} has no name or description`)
+	check(#upgrade.unit > 0, `Upgrades: {upgrade.id} has no unit to render`)
+	check(upgrade.baseCost > 0, `Upgrades: {upgrade.id} costs nothing at level 0`)
+
+	for level = 0, upgrade.maxLevel - 2 do
+		check(
+			Upgrades.costFor(upgrade, level + 1) > Upgrades.costFor(upgrade, level),
+			`Upgrades: {upgrade.id} does not get dearer at level {level + 1}`
+		)
+	end
+
+	equal(Upgrades.bonus(upgrade.id, 0), 0, `Upgrades: {upgrade.id} at level 0 should do nothing`)
+	-- Asking for more than the cap must not pay more than the cap.
+	equal(
+		Upgrades.bonus(upgrade.id, upgrade.maxLevel + 50),
+		Upgrades.bonus(upgrade.id, upgrade.maxLevel),
+		`Upgrades: {upgrade.id} keeps paying out past its maximum level`
+	)
+end
+equal(Upgrades.bonus("not_a_real_upgrade", 5), 0, "Upgrades: an unknown id should be neutral")
+equal(Upgrades.multiplier("service", 0), 1, "Upgrades: Room Service at level 0 should be neutral")
+
+do
+	-- The Neon Sign shortens the gap between arrivals; it must not be able to
+	-- shorten it past the floor, or the road becomes a firehose.
+	local sign = Upgrades.ById.sign
+	local shortest = GameConfig.ArrivalInterval - Upgrades.bonus("sign", sign.maxLevel)
+	check(
+		shortest >= GameConfig.MinArrivalInterval,
+		`Upgrades: a maxed Neon Sign gives an interval of {shortest}s, under the {GameConfig.MinArrivalInterval}s floor`
+	)
+	print(`  (arrivals every {GameConfig.ArrivalInterval}s -> {shortest}s fully upgraded)`)
+end
+
+section("Objectives")
+do
+	check(Objectives.Count > 0, "Objectives: the list is empty")
+
+	local seen = {}
+	for index, objective in Objectives.List do
+		check(seen[objective.id] == nil, `Objectives: duplicate id "{objective.id}"`)
+		seen[objective.id] = true
+		check(#objective.name > 0, `Objectives: {objective.id} has no name`)
+		check(#objective.hint > 0, `Objectives: {objective.id} has no hint -- the hint is the whole point`)
+		check(objective.rewardSeconds > 0, `Objectives: {objective.id} pays nothing`)
+
+		-- Every progress function must run against a fresh profile without
+		-- erroring, and must return a target worth reaching.
+		local current, target = objective.progress(Schema.Template)
+		check(type(current) == "number", `Objectives: {objective.id} progress did not return a number`)
+		check(type(target) == "number" and target > 0, `Objectives: {objective.id} has no target`)
+		check(
+			current < target,
+			`Objectives: {objective.id} is already complete on a brand new profile`
+		)
+		equal(Objectives.isComplete(index, Schema.Template), false, `Objectives: {objective.id} completes instantly`)
+	end
+
+	-- Rewards should grow down the list, since later objectives take longer.
+	for index = 2, Objectives.Count do
+		check(
+			Objectives.List[index].rewardSeconds >= Objectives.List[index - 1].rewardSeconds,
+			`Objectives: "{Objectives.List[index].id}" pays less than the one before it`
+		)
+	end
+
+	check(Objectives.get(Objectives.Count + 1) == nil, "Objectives: the list must end")
+	print(`  ({Objectives.Count} objectives, first is "{Objectives.List[1].name}")`)
+end
+
 section("Monetization")
 do
 	local seenAsset = {}
@@ -553,6 +655,29 @@ do
 	print(`  (seed money ${template.cash}, cheapest guest ${cheapest})`)
 	equal(template.rooms, GameConfig.StartingRooms, "Schema: a new motel starts with the starting rooms")
 	equal(template.version, Schema.Version, "Schema: template version must match Schema.Version")
+	equal(template.objective, 1, "Schema: a new profile starts on the first objective")
+
+	-- The two upgrade maps must be separate and must cover their own configs.
+	for _, upgrade in Upgrades.List do
+		check(
+			template.upgrades[upgrade.id] ~= nil,
+			`Schema: template.upgrades is missing "{upgrade.id}"`
+		)
+		check(
+			template.starShop[upgrade.id] == nil,
+			`Schema: "{upgrade.id}" is a Cash upgrade but appears in starShop`
+		)
+	end
+	for _, upgrade in Prestige.Upgrades do
+		check(
+			template.starShop[upgrade.id] ~= nil,
+			`Schema: template.starShop is missing "{upgrade.id}"`
+		)
+		check(
+			template.upgrades[upgrade.id] == nil,
+			`Schema: "{upgrade.id}" is a Star upgrade but appears in upgrades`
+		)
+	end
 
 	-- Negative numbers, guests that no longer exist, guests in rooms that no
 	-- longer exist, and two guests booked into the same room.
@@ -561,6 +686,7 @@ do
 	broken.stars = -3
 	broken.rating = 0
 	broken.rooms = 0
+	broken.objective = 0
 	broken.guests = {
 		{ uid = "1", guest = "grubling", room = 1 },
 		{ uid = "2", guest = "grubling", room = 1 },
@@ -577,6 +703,7 @@ do
 	equal(broken.cash, 0, "sanitise: negative cash should clamp to zero")
 	equal(broken.stars, 0, "sanitise: negative stars should clamp to zero")
 	equal(broken.rating, 1, "sanitise: rating should never drop below one")
+	equal(broken.objective, 1, "sanitise: the objective pointer should never drop below one")
 	equal(broken.rooms, GameConfig.StartingRooms, "sanitise: rooms should never drop below the starting count")
 	equal(#broken.guests, 3, "sanitise: a guest whose id no longer exists should be dropped")
 	equal(#broken.arrivals, 1, "sanitise: an arrival for a deleted guest should be dropped")

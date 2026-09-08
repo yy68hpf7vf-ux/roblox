@@ -26,10 +26,11 @@ local DataService = require(Services.DataService)
 local EventService = require(Services.EventService)
 local LeaderboardService = require(Services.LeaderboardService)
 local MonetizationService = require(Services.MonetizationService)
+local MovementService = require(Services.MovementService)
 local NightService = require(Services.NightService)
+local ObjectiveService = require(Services.ObjectiveService)
 local PassService = require(Services.PassService)
 local PlotService = require(Services.PlotService)
-local PrestigeService = require(Services.PrestigeService)
 local QuestService = require(Services.QuestService)
 local RentService = require(Services.RentService)
 local RewardService = require(Services.RewardService)
@@ -45,8 +46,11 @@ local world = WorldBuilder.build()
 -- Plots first: everything below assumes a player can be mapped to a motel.
 PlotService.start(world)
 
--- Listeners before loaders.
+-- Listeners before loaders. MovementService and ObjectiveService both react to
+-- EconomyService.Changed, so they have to be connected before any profile loads.
 StateService.start()
+MovementService.start()
+ObjectiveService.start()
 
 --[[ Put a player in front of their own motel. A character can spawn before the
      profile arrives, so this waits rather than dropping everyone in the square

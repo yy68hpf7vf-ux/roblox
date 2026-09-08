@@ -25,6 +25,7 @@ single number going up.
 | `Ratings.PaybackSeconds` | `Config/Ratings.lua` | How long a guest takes to pay for itself |
 | `Rooms.BaseCost` / `CostGrowth` | `Config/Rooms.lua` | How fast the motel can grow |
 | `Prestige.StarDivisor` | `Config/Prestige.lua` | When the first renovation lands |
+| `Upgrades.List[]` | `Config/Upgrades.lua` | The levelled Cash sinks: rent, arrival rate, speed, defence |
 
 ## Checking a change
 
@@ -47,38 +48,38 @@ Monster Motel progression -- median of 9 runs, free-to-play, no raiding
 
      10.0 min   5 rooms                  +/-   2.2 min
      15.4 min   Two Star                 +/-   2.2 min
-     38.2 min   Three Star               +/-   4.6 min
-     52.2 min   10 rooms                 +/-   6.6 min
-     87.2 min   Four Star                +/-  14.2 min
-    128.0 min   renovate for 1 star      +/-  16.2 min
-    136.4 min   15 rooms                 +/-  17.4 min
-    164.4 min   Five Star                +/-  18.2 min
-    217.2 min   renovate for 3 stars     +/-  22.2 min
-    365.2 min   Six Star                 +/-  36.6 min
-    418.2 min   20 rooms                 +/-  25.4 min
-    420.0 min   renovate for 10 stars    +/-  28.2 min
-    681.0 min   The Last Motel           +/-  96.4 min
+     42.5 min   Three Star               +/-   5.1 min
+     53.6 min   10 rooms                 +/-   3.8 min
+     84.2 min   Four Star                +/-   8.9 min
+    110.0 min   renovate for 1 star      +/-  11.4 min
+    125.5 min   15 rooms                 +/-  12.0 min
+    145.2 min   Five Star                +/-  11.8 min
+    171.4 min   renovate for 3 stars     +/-  16.6 min
+    254.8 min   Six Star                 +/-  23.8 min
+    280.1 min   renovate for 10 stars    +/-  19.9 min
+    287.1 min   20 rooms                 +/-  19.7 min
+    416.8 min   The Last Motel           +/-  31.4 min
 
 One full run for shape:
 
       0.0 min   start
      10.0 min   5 rooms
      15.4 min   Two Star
-     37.6 min   Three Star
-     53.4 min   10 rooms
-     91.0 min   Four Star
-    135.4 min   renovate for 1 star
-    143.6 min   15 rooms
-    171.2 min   Five Star
-    214.8 min   renovate for 3 stars
-    338.0 min   Six Star
-    409.2 min   20 rooms
-    411.6 min   renovate for 10 stars
-    681.0 min   The Last Motel
+     41.8 min   Three Star
+     53.6 min   10 rooms
+     85.8 min   Four Star
+    109.9 min   renovate for 1 star
+    122.8 min   15 rooms
+    141.3 min   Five Star
+    163.2 min   renovate for 3 stars
+    244.3 min   Six Star
+    269.4 min   renovate for 10 stars
+    276.1 min   20 rooms
+    406.6 min   The Last Motel
 
 Summary
   first rating upgrade   15.4 min
-  final rating           681.0 min
+  final rating           416.8 min
 
 Ignores quests, dailies, codes, the Celebrity Arrival and every gamepass,
 all of which a real player has. Treat these as the slow end of the range.
@@ -94,9 +95,14 @@ The shape to preserve:
   asserts the seed money still covers the cheapest guest.
 - **First rating upgrade around fifteen minutes.** Long enough to learn the loop,
   short enough to prove it pays.
-- **First renovation around two hours** on these numbers, which lands nearer
-  ninety minutes for a real player with quests, dailies and the Celebrity
+- **First renovation just under two hours** on these numbers, which lands nearer
+  seventy-five minutes for a real player with quests, dailies and the Celebrity
   Arrival. A prestige loop nobody reaches on day one may as well not exist.
+- **Somewhere to put spare cash at every point.** Room Service and the Neon Sign
+  are modelled here because they are real sinks that change the curve -- adding
+  them pulled the first renovation in by eighteen minutes and the endgame in by
+  four hours. Running Shoes and Night Porter are left out because neither
+  changes income.
 - **Ratings roughly doubling in distance** each time. Two Star at 15 minutes,
   Three at 38, Four at 87, Five at 164.
 

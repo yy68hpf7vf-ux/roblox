@@ -75,7 +75,7 @@ function ArrivalService.update(player: Player, profile: Profile): boolean
 		return false
 	end
 
-	local interval = EconomyService.arrivalInterval(player)
+	local interval = EconomyService.arrivalInterval(player, profile)
 	local changed = false
 
 	if profile.nextArrivalAt == 0 then
@@ -135,7 +135,7 @@ function ArrivalService.view(player: Player, profile: Profile): { [string]: any 
 	return {
 		slots = slots,
 		maxSlots = GameConfig.ArrivalSlots,
-		interval = EconomyService.arrivalInterval(player),
+		interval = EconomyService.arrivalInterval(player, profile),
 		nextAt = profile.nextArrivalAt,
 		odds = Ratings.odds(rating),
 		nextOdds = if Ratings.next(profile.rating) then Ratings.odds(Ratings.next(profile.rating) :: any) else nil,

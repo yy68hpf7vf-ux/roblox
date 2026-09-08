@@ -9,6 +9,12 @@
 	The night clock is the most important element on the screen. Everything a
 	player does -- when to upgrade, when to go out, when to come home -- keys off
 	how long is left, so it is large, central and never hidden behind a menu.
+
+	The objective chip under the wallet is the other one that earns its space. This
+	game is not self-explanatory: a new player spawns facing an empty building, a
+	road of monsters they have to pay for, and a night cycle nobody warned them
+	about. The chip gives them exactly one thing to do next, and it goes away for
+	good once they have seen the whole loop.
 ]]
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
@@ -96,6 +102,54 @@ function Hud.build(parent: ScreenGui, openWindow: (string) -> ()): Handle
 		Size = UDim2.new(1, 0, 0, 16),
 		Parent = wallet,
 	})
+
+	-- ------------------------------------------------------------ objective
+	local objective = Widgets.panel({
+		Name = "Objective",
+		Position = UDim2.fromOffset(14, 154),
+		Size = UDim2.fromOffset(266, 76),
+		BackgroundColor3 = Theme.Color.Panel,
+		Visible = false,
+		Parent = parent,
+	})
+	Widgets.padding(11).Parent = objective
+
+	local objectiveStep = Widgets.label({
+		Text = "",
+		TextSize = 11,
+		TextColor3 = Theme.Color.TextFaint,
+		Size = UDim2.new(1, 0, 0, 14),
+		Parent = objective,
+	})
+
+	local objectiveName = Widgets.label({
+		Text = "",
+		Font = Theme.Font.Heading,
+		TextSize = 14,
+		TextColor3 = Theme.Color.Accent,
+		Position = UDim2.fromOffset(0, 15),
+		Size = UDim2.new(1, 0, 0, 18),
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = objective,
+	})
+
+	local objectiveHint = Widgets.label({
+		Text = "",
+		TextSize = 11.5,
+		TextColor3 = Theme.Color.TextDim,
+		Position = UDim2.fromOffset(0, 33),
+		Size = UDim2.new(1, 0, 0, 30),
+		TextWrapped = true,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		Parent = objective,
+	})
+
+	local _, objectiveFill = Widgets.bar({
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 0, 1, 0),
+		Size = UDim2.new(1, 0, 0, 4),
+		Parent = objective,
+	}, Theme.Color.Accent)
 
 	-- ------------------------------------------------------------ night clock
 	local clock = Widgets.panel({
@@ -329,6 +383,22 @@ function Hud.build(parent: ScreenGui, openWindow: (string) -> ()): Handle
 			carryTitle.Text = `CARRYING {if guest then string.upper(guest.name) else "A GUEST"}`
 		else
 			carrying.Visible = false
+		end
+
+		-- Objective chip. Absent once the list is finished, which is the point --
+		-- it stops giving instructions rather than inventing errands forever.
+		local goal = state.objective
+		if goal then
+			objective.Visible = true
+			objectiveStep.Text = `NEXT  ·  {goal.index}/{goal.total}`
+			objectiveName.Text = goal.name
+			objectiveHint.Text = goal.hint
+			objectiveFill.Size = UDim2.fromScale(
+				math.clamp((goal.progress or 0) / math.max(1, goal.target or 1), 0, 1),
+				1
+			)
+		else
+			objective.Visible = false
 		end
 
 		warning.Visible = state.volatile == true

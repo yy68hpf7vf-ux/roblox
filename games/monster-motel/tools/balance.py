@@ -15,9 +15,16 @@ The simulated player is greedy but sensible:
   * Buys a guest if a room is free, or if it out-earns the worst guest housed.
   * Buys a room or a rating upgrade when it is affordable and worth more than
     banking the cash for the next guest.
+  * Buys a levelled upgrade (Room Service, Neon Sign) when it can do so without
+    starving the main track -- modelled as "only when I have three times its
+    price spare", which is roughly how people actually treat a cheap side
+    purchase.
   * Never raids and is never raided. Theft is a wash across a server -- one
     motel's loss is another's gain -- so leaving it out measures the economy
     rather than the dice.
+
+Running Shoes and Night Porter are left out: neither changes income, so neither
+moves any number this simulation reports.
 
 Run it after changing any price:
 
@@ -83,6 +90,24 @@ def load_ratings() -> list[dict]:
     return sorted(ratings, key=lambda r: r["level"])
 
 
+def load_upgrades() -> dict[str, dict]:
+    """The levelled Cash upgrades that affect income."""
+    source = read("Upgrades")
+    out = {}
+    for block in re.split(r"\n\t\{", source):
+        found = re.search(r'id = "(\w+)"', block)
+        if not found:
+            continue
+        fields = {}
+        for key in ("maxLevel", "baseCost", "costGrowth", "perLevel"):
+            match = re.search(rf"{key} = ([\d.]+)", block)
+            if match:
+                fields[key] = float(match.group(1))
+        if len(fields) == 4:
+            out[found.group(1)] = fields
+    return out
+
+
 def load_payback() -> dict[str, int]:
     source = read("Ratings")
     block = re.search(r"Ratings\.PaybackSeconds = \{(.*?)\}", source, re.S)
@@ -112,6 +137,9 @@ class Sim:
         schema = (ROOT / "src" / "shared" / "Schema.lua").read_text()
         self.starting_cash = scalar(schema, "cash")
 
+        self.upgrade_defs = load_upgrades()
+        self.min_arrival = scalar(game, "MinArrivalInterval")
+
         prestige = read("Prestige")
         self.star_divisor = scalar(prestige, "Prestige.StarDivisor")
         self.minimum_rating = int(scalar(prestige, "Prestige.MinimumRating"))
@@ -125,6 +153,7 @@ class Sim:
         self.rooms = self.starting_rooms
         self.housed: list[int] = []
         self.renovations = 0
+        self.levels = {key: 0 for key in self.upgrade_defs}
         self.earned = float(self.starting_cash)
         self.starred = 0
         self.log: list[tuple[float, str]] = []
@@ -138,7 +167,28 @@ class Sim:
         return self.room_base * (self.room_growth ** (paid - 1))
 
     def rent(self) -> float:
-        return sum(self.housed) * (1 + self.renovations * RENOVATION_BONUS)
+        service = self.upgrade_defs["service"]["perLevel"] * self.levels.get("service", 0)
+        return sum(self.housed) * (1 + self.renovations * RENOVATION_BONUS) * (1 + service)
+
+    def interval(self) -> float:
+        """Seconds between arrivals, shortened by the Neon Sign."""
+        sign = self.upgrade_defs["sign"]["perLevel"] * self.levels.get("sign", 0)
+        return max(self.min_arrival, self.arrival_interval - sign)
+
+    def upgrade_cost(self, key: str) -> float:
+        spec = self.upgrade_defs[key]
+        return spec["baseCost"] * (spec["costGrowth"] ** self.levels[key])
+
+    def try_upgrades(self):
+        """Buys a cheap side upgrade only when it will not starve the main track."""
+        for key in ("service", "sign"):
+            spec = self.upgrade_defs[key]
+            while self.levels[key] < spec["maxLevel"]:
+                cost = self.upgrade_cost(key)
+                if self.cash < cost * 3:
+                    break
+                self.cash -= cost
+                self.levels[key] += 1
 
     def roll_guest(self) -> tuple[str, int]:
         weights = self.ratings[self.rating - 1]["weights"]
@@ -176,10 +226,11 @@ class Sim:
             guard += 1
 
             # Rent accrues until the next arrival.
-            earned = self.rent() * self.arrival_interval
+            step = self.interval()
+            earned = self.rent() * step
             self.cash += earned
             self.earned += earned
-            self.seconds += self.arrival_interval
+            self.seconds += step
 
             # Renovating needs a minimum rating AND enough earned to be worth a
             # Star, so track when both first line up.
@@ -220,6 +271,8 @@ class Sim:
                     self.cash -= nxt["cost"]
                     self.rating += 1
                     self.note(f"{nxt['name']}")
+
+            self.try_upgrades()
 
         return list(self.log)
 

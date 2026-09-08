@@ -28,6 +28,9 @@ local GameConfig = {
 	-- A new guest offer appears on the arrivals road this often. Express Lane
 	-- halves it. The odds of what appears are NOT affected by anything bought.
 	ArrivalInterval = 12,
+	-- The Neon Sign and Express Lane both shorten the gap between arrivals. This
+	-- is the floor neither can go under, so the road can never become a firehose.
+	MinArrivalInterval = 2,
 	ArrivalSlots = 4,
 
 	-- Rooms
@@ -39,8 +42,15 @@ local GameConfig = {
 	NightDuration = 90,
 
 	-- ------------------------------------------------------------------ Theft
-	-- Fixed for everyone. No gamepass, product, star upgrade or level changes a
-	-- single value in this block -- that is what keeps the PvP honest.
+	-- Nothing bought with Robux changes any value in this block. Nothing at all
+	-- changes any of them except NormalWalkSpeed, which is the base that the
+	-- Cash-bought Running Shoes adds to (Config/Upgrades.lua) -- earnable by every
+	-- player, and capped.
+	--
+	-- CarryWalkSpeed is the one that carries the whole design: it is applied flat,
+	-- by MovementService, without reading the profile at all. However many
+	-- upgrades or passes a thief owns, they cross open ground with somebody else's
+	-- guest at exactly this speed.
 	CarryWalkSpeed = 11,
 	NormalWalkSpeed = 16,
 	-- How close a victim must get to a thief to make them drop the guest.

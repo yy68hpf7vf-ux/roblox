@@ -17,8 +17,11 @@ is no `.rbxl` to hand-edit.
 
 1. **Buy a guest** off the Arrivals Road. Each one pays rent per second.
 2. **Rent piles up in your safe.** Walk onto your front desk to bank it.
-3. **Spend it** on rooms (more guests), rating (better guests), a lock (a slower
-   door), and a bigger safe.
+3. **Spend it.** Rooms hold more guests, rating attracts better ones, a lock slows
+   thieves down, a bigger safe holds more rent. Then keep spending it: **Running
+   Shoes** make you faster, **Room Service** raises every guest's rent, a **Neon
+   Sign** brings guests in more often, and a **Night Porter** tells you the moment
+   somebody starts on your door.
 4. **Lights Out.** Ninety seconds where every door in town can be broken. Raid
    somebody, or stay home and guard yours.
 5. **Renovate** for a permanent multiplier and Stars. You keep every guest.
@@ -40,6 +43,15 @@ nights, and a clock on the HUD that everything else keys off.
 road will ever offer, dropped in public with a countdown. Anyone can tag the
 carrier and make them drop it, which turns the walk home into the best ninety
 seconds in the game.
+
+**Somewhere to put the money.** Four step purchases and four levelled upgrades, so
+collecting rent still has a point once the obvious things are bought. Running Shoes
+are Cash-only and capped, and they deliberately do not apply while you are carrying
+a guest — see [docs/FAIRNESS.md](docs/FAIRNESS.md).
+
+**An objective chip** that gives a new player exactly one thing to do next, from
+"check in your first guest" through to "renovate once", then gets out of the way
+for good. The game is not self-explanatory without it.
 
 **Retention** — daily streak with a two-day grace window, a playtime ladder that
 ends when it says it does, three daily quests that reward defending as often as
@@ -73,7 +85,7 @@ The town has 12 plots, so set MaxPlayers to 12 or raise `WorldBuilder.PlotCount`
 ```bash
 tools/check.sh                                          # from the repo root, both games
 python3 tools/check_requires.py games/monster-motel     # require graph
-python3 tools/selftest.py <luau> games/monster-motel    # 876 config assertions
+python3 tools/selftest.py <luau> games/monster-motel    # 1,062 config assertions
 python3 games/monster-motel/tools/balance.py            # progression simulation
 ```
 
@@ -82,7 +94,11 @@ asserts two things specific to this game:
 
 - **No paid item can touch a raid.** It walks every gamepass and product against a
   forbidden-field list and the names of the raid constants. A future "+2 carry
-  speed" pass fails at the terminal instead of shipping.
+  speed" pass fails at the terminal instead of shipping. It also checks the
+  Cash upgrades: there may be at most one movement upgrade, it must cap under
+  double the base speed, and nothing may be named for carry speed.
+- **Every objective must be incomplete on a fresh profile.** Otherwise the chip
+  would fire the whole tutorial on the first frame and hand out every reward.
 - **A maxed door is still a door.** The worst-case break time has to fit inside
   half a night, or a fully upgraded motel would be unraidable.
 
@@ -97,9 +113,11 @@ the cheapest guest on the road.
 src/shared/Config/     Every tunable number
 src/server/Services/   One responsibility each
   TheftService         The raid. Read the header comment first.
+  MovementService      The only code that writes WalkSpeed, which is the point
   PlotService          Motels, and keeping them in sync with saves
   NightService         The clock everything keys off
   EventService         The Celebrity Arrival
+  ObjectiveService     The one-at-a-time tutorial chip
 src/server/World/      Builds the town at runtime
 src/client/            HUD, six windows, the raid controller
 tools/                 Self-test assertions and the balance simulation

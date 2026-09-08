@@ -26,6 +26,7 @@ local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
 local EventService = require(script.Parent.EventService)
 local NightService = require(script.Parent.NightService)
+local ObjectiveService = require(script.Parent.ObjectiveService)
 local PassService = require(script.Parent.PassService)
 local PrestigeService = require(script.Parent.PrestigeService)
 local QuestService = require(script.Parent.QuestService)
@@ -102,13 +103,15 @@ function StateService.build(player: Player, profile: Profile): { [string]: any }
 		night = NightService.state(),
 		event = EventService.state(),
 		carrying = TheftService.carriedGuest(player),
+		objective = ObjectiveService.view(profile),
 
 		-- Broken out so the HUD can show where the multiplier comes from rather
 		-- than one opaque number.
 		multipliers = {
 			total = EconomyService.rentMultiplier(player, profile),
 			renovations = 1 + profile.renovations * EconomyService.RenovationBonus,
-			concierge = require(Shared.Config.Prestige).upgradeMultiplier("concierge", profile.upgrades.concierge or 0),
+			service = require(Shared.Config.Upgrades).multiplier("service", profile.upgrades.service or 0),
+			concierge = require(Shared.Config.Prestige).upgradeMultiplier("concierge", profile.starShop.concierge or 0),
 			passes = PassService.multiplier(player, "rentMultiplier"),
 			boost = EconomyService.boostMultiplier(profile),
 		},

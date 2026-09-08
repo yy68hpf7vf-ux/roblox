@@ -57,7 +57,13 @@ export type Profile = {
 	arrivals: { ArrivalSlot },
 	nextArrivalAt: number,
 
+	-- Levelled upgrades bought with Cash (Config/Upgrades.lua).
 	upgrades: { [string]: number },
+	-- Levelled upgrades bought with Stars (Config/Prestige.lua). Kept separate
+	-- because they survive a renovation and the Cash ones do not.
+	starShop: { [string]: number },
+	-- The objective the player is currently working on, 1-based.
+	objective: number,
 	-- Cash earned since the last renovation, which is what Stars are paid on.
 	earnedThisRun: number,
 	renovations: number,
@@ -110,7 +116,9 @@ Schema.Template = {
 	arrivals = {},
 	nextArrivalAt = 0,
 
-	upgrades = { concierge = 0, wing = 0, deadbolt = 0 },
+	upgrades = { shoes = 0, service = 0, sign = 0, porter = 0 },
+	starShop = { concierge = 0, wing = 0, deadbolt = 0 },
+	objective = 1,
 	earnedThisRun = 0,
 	renovations = 0,
 
@@ -165,6 +173,7 @@ function Schema.sanitise(profile: Profile)
 	profile.earnedThisRun = math.max(0, profile.earnedThisRun)
 	profile.renovations = math.max(0, math.floor(profile.renovations))
 
+	profile.objective = math.max(1, math.floor(profile.objective or 1))
 	profile.rating = math.max(1, math.floor(profile.rating))
 	profile.rooms = math.max(GameConfig.StartingRooms, math.floor(profile.rooms))
 	profile.lockLevel = math.max(0, math.floor(profile.lockLevel))

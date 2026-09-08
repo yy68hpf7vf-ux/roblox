@@ -59,6 +59,39 @@ function RaidController.clearDoors()
 	table.clear(openDoors)
 end
 
+--[[ Night Porter level 2: outline whoever is on your door so you can actually
+     find them in the dark. Purely a client-side highlight -- the server has
+     already decided the alert is warranted. ]]
+function RaidController.markThief(thiefName: string, seconds: number)
+	local thief = Players:FindFirstChild(thiefName)
+	if not thief or not thief:IsA("Player") then
+		return
+	end
+
+	local character = thief.Character
+	if not character then
+		return
+	end
+
+	local existing = character:FindFirstChild("PorterMark")
+	if existing then
+		existing:Destroy()
+	end
+
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "PorterMark"
+	highlight.FillColor = Color3.fromRGB(255, 96, 132)
+	highlight.FillTransparency = 0.6
+	highlight.OutlineColor = Color3.fromRGB(255, 140, 160)
+	highlight.Parent = character
+
+	task.delay(math.max(5, seconds + 10), function()
+		if highlight.Parent then
+			highlight:Destroy()
+		end
+	end)
+end
+
 local function rootPosition(): Vector3?
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?

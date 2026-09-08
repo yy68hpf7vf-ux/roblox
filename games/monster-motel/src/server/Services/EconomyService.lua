@@ -6,11 +6,15 @@
 	game is assembled in one function so the HUD, a rent tick, a quest payout and a
 	cash pack can never disagree about a player's rate.
 
-	Rent multiplier = renovations x Concierge x gamepasses x active boost.
+	Rent multiplier = renovations x Room Service x Concierge x gamepasses x boost.
 
 	Note what is NOT in this file: nothing about theft. Carry speed, break times and
 	grace windows live in GameConfig as constants and are never multiplied by
-	anything a player owns.
+	anything a player owns or bought.
+
+	`walkSpeed` is the one movement number that does move, and it moves only with
+	the Cash-bought Running Shoes -- earnable by every player, capped, and never
+	applied while carrying. See Config/Upgrades.lua.
 ]]
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
@@ -21,6 +25,7 @@ local Prestige = require(Shared.Config.Prestige)
 local Ratings = require(Shared.Config.Ratings)
 local Rooms = require(Shared.Config.Rooms)
 local Schema = require(Shared.Schema)
+local Upgrades = require(Shared.Config.Upgrades)
 local Signal = require(Shared.Util.Signal)
 
 local PassService = require(script.Parent.PassService)
@@ -42,7 +47,7 @@ end
 --[[ How many rooms this motel may ever hold: the base cap, plus Extra Wing from
      the Star Shop, plus the +5 Rooms pass. ]]
 function EconomyService.maxRooms(player: Player, profile: Profile): number
-	local wings = Prestige.upgradeBonus("wing", profile.upgrades.wing or 0)
+	local wings = Prestige.upgradeBonus("wing", profile.starShop.wing or 0)
 	return GameConfig.BaseMaxRooms + wings + PassService.sum(player, "extraRooms")
 end
 
@@ -128,7 +133,8 @@ EconomyService.RenovationBonus = 0.25
 
 function EconomyService.rentMultiplier(player: Player, profile: Profile): number
 	return (1 + profile.renovations * EconomyService.RenovationBonus)
-		* Prestige.upgradeMultiplier("concierge", profile.upgrades.concierge or 0)
+		* Upgrades.multiplier("service", profile.upgrades.service or 0)
+		* Prestige.upgradeMultiplier("concierge", profile.starShop.concierge or 0)
 		* PassService.multiplier(player, "rentMultiplier")
 		* EconomyService.boostMultiplier(profile)
 end
@@ -158,11 +164,31 @@ function EconomyService.earnsOffline(player: Player): boolean
 	return PassService.anyFlag(player, "offlineEarnings")
 end
 
---[[ Seconds between arrivals for this player. Express Lane divides it; the odds
-     of what turns up are untouched. ]]
-function EconomyService.arrivalInterval(player: Player): number
+--[[ Seconds between arrivals. The Neon Sign takes whole seconds off it, then
+     Express Lane divides what is left. Neither touches the odds of what turns up. ]]
+function EconomyService.arrivalInterval(player: Player, profile: Profile): number
+	local base = GameConfig.ArrivalInterval - Upgrades.bonus("sign", profile.upgrades.sign or 0)
 	local speed = math.max(1, PassService.multiplier(player, "arrivalSpeed"))
-	return GameConfig.ArrivalInterval / speed
+	return math.max(GameConfig.MinArrivalInterval, base / speed)
+end
+
+-- ---------------------------------------------------------------- movement
+
+--[[ How fast this player walks normally. Running Shoes is the only input, it is
+     bought with Cash, and it is capped by the upgrade's own maxLevel.
+
+     This is deliberately NOT used while carrying a guest -- TheftService applies
+     GameConfig.CarryWalkSpeed instead, which is a flat constant for everyone in
+     the server. Shoes get you to a door and home again; they never help you
+     outrun the person whose guest you are holding. ]]
+function EconomyService.walkSpeed(profile: Profile): number
+	return GameConfig.NormalWalkSpeed + Upgrades.bonus("shoes", profile.upgrades.shoes or 0)
+end
+
+--[[ Night Porter level. 0 = you find out when the door opens; 1 = you are told
+     the moment somebody starts on it; 2 = they are marked so you can find them. ]]
+function EconomyService.porterLevel(profile: Profile): number
+	return profile.upgrades.porter or 0
 end
 
 --[[ Turns "this is worth ten minutes of your time" into cash. Every reward that
@@ -216,7 +242,7 @@ end
      which is what stops the door from being a wallet-measuring contest. ]]
 function EconomyService.breakSeconds(profile: Profile): number
 	local perLevel = Prestige.UpgradeById.deadbolt.perLevel
-	return Rooms.breakSecondsFor(profile.lockLevel, profile.upgrades.deadbolt or 0, perLevel)
+	return Rooms.breakSecondsFor(profile.lockLevel, profile.starShop.deadbolt or 0, perLevel)
 end
 
 --[[ Whether this motel can be robbed at all right now. Three protections, none of

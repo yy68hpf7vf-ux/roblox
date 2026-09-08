@@ -1,7 +1,12 @@
 --!strict
 --[[
 	ShopService
-	The four things Cash buys: rooms, rating, locks and a bigger safe.
+	Everything Cash buys.
+
+	Two shapes. The step purchases -- rooms, rating, locks, the safe -- each have
+	their own row and their own ceiling. The levelled ones in Config/Upgrades.lua
+	(Running Shoes, Room Service, Neon Sign, Night Porter) are the sinks that keep
+	collecting rent worth doing once the obvious purchases are made.
 
 	Every purchase re-checks price, level and cap against the config on the server.
 	The client's copy of the shop is for drawing buttons and nothing else.
@@ -11,6 +16,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Format = require(Shared.Util.Format)
 local Ratings = require(Shared.Config.Ratings)
 local Rooms = require(Shared.Config.Rooms)
+local Upgrades = require(Shared.Config.Upgrades)
 local Schema = require(Shared.Schema)
 
 local EconomyService = require(script.Parent.EconomyService)
@@ -88,6 +94,53 @@ function ShopService.buySafe(player: Player, profile: Profile): (boolean, string
 	return true, `Safe upgraded. It now holds {Format.duration(next.seconds)} of rent.`
 end
 
+--[[ A levelled Cash upgrade. Same validation shape as everything else: price,
+     level and cap are re-checked here rather than trusted from the client. ]]
+function ShopService.buyUpgrade(player: Player, profile: Profile, upgradeId: string): (boolean, string)
+	local upgrade = Upgrades.ById[upgradeId]
+	if not upgrade then
+		return false, "No such upgrade."
+	end
+
+	local level = profile.upgrades[upgradeId] or 0
+	if level >= upgrade.maxLevel then
+		return false, `{upgrade.name} is already at its maximum.`
+	end
+
+	local cost = Upgrades.costFor(upgrade, level)
+	if not EconomyService.spendCash(player, profile, cost) then
+		return false, `{upgrade.name} costs ${Format.short(cost)}. You have ${Format.short(profile.cash)}.`
+	end
+
+	profile.upgrades[upgradeId] = level + 1
+	bought(player, profile)
+
+	return true, `{upgrade.name} is now level {level + 1}.`
+end
+
+--[[ The levelled upgrades, with the effect spelled out in the units the player
+     already understands rather than as a raw multiplier. ]]
+function ShopService.upgradeView(player: Player, profile: Profile): { { [string]: any } }
+	local out = {}
+	for _, upgrade in Upgrades.List do
+		local level = profile.upgrades[upgrade.id] or 0
+		local maxed = level >= upgrade.maxLevel
+		table.insert(out, {
+			id = upgrade.id,
+			name = upgrade.name,
+			desc = upgrade.desc,
+			level = level,
+			maxLevel = upgrade.maxLevel,
+			cost = if maxed then 0 else Upgrades.costFor(upgrade, level),
+			bonus = Upgrades.bonus(upgrade.id, level),
+			nextBonus = Upgrades.bonus(upgrade.id, math.min(level + 1, upgrade.maxLevel)),
+			unit = upgrade.unit,
+			maxed = maxed,
+		})
+	end
+	return out
+end
+
 --[[ Everything the Motel window renders, resolved server-side so a client cannot
      invent a cheaper price. ]]
 function ShopService.view(player: Player, profile: Profile): { [string]: any }
@@ -118,6 +171,11 @@ function ShopService.view(player: Player, profile: Profile): { [string]: any }
 		safeSeconds = Rooms.safe(profile.safeLevel).seconds,
 		nextSafeSeconds = if nextSafe then nextSafe.seconds else nil,
 		safeCost = if nextSafe then nextSafe.cost else 0,
+
+		walkSpeed = EconomyService.walkSpeed(profile),
+		arrivalInterval = EconomyService.arrivalInterval(player, profile),
+		porterLevel = EconomyService.porterLevel(profile),
+		upgrades = ShopService.upgradeView(player, profile),
 	}
 end
 

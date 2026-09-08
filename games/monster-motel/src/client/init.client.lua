@@ -118,6 +118,15 @@ Net.event("Effect").OnClientEvent:Connect(function(name, payload)
 		hud.setBreakProgress(0, 0)
 	elseif name == "carrying" or name == "stoleGuest" then
 		hud.setBreakProgress(0, 0)
+	elseif name == "porterAlert" then
+		-- Night Porter. Level 1 is the toast the server already sent; level 2
+		-- also marks them.
+		if body.mark and type(body.thief) == "string" then
+			RaidController.markThief(body.thief, body.seconds or 10)
+		end
+	elseif name == "objectiveComplete" then
+		-- The toast carries the detail; this is the punctuation.
+		hud.setBreakProgress(0, 0)
 	end
 end)
 
