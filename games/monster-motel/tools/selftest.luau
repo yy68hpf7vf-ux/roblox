@@ -575,13 +575,23 @@ do
 		end
 	end
 
+	-- The paste block at the top of Monetization.lua must still cover everything,
+	-- or "edit one table to go live" quietly stops being true.
 	for _, pass in Monetization.Gamepasses do
 		check(#pass.name > 0 and #pass.desc > 0, `Gamepasses: {pass.id} has no name or description`)
+		check(
+			Monetization.AssetIds[pass.id] ~= nil,
+			`Gamepasses: {pass.id} is missing from the ASSET block at the top of Monetization.lua`
+		)
 		checkAsset("Gamepasses", pass.id, pass.assetId)
 	end
 
 	for _, product in Monetization.Products do
 		check(#product.name > 0 and #product.desc > 0, `Products: {product.id} has no name or description`)
+		check(
+			Monetization.AssetIds[product.id] ~= nil,
+			`Products: {product.id} is missing from the ASSET block at the top of Monetization.lua`
+		)
 		checkAsset("Products", product.id, product.assetId)
 		check(
 			product.kind == "cash" or product.kind == "boost",

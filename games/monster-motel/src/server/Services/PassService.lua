@@ -24,35 +24,64 @@ PassService.Changed = Signal.new() :: Signal.Signal<Player, string, boolean>
 
 local owned: { [Player]: { [string]: boolean } } = {}
 
-local function fetch(player: Player, pass: Monetization.Gamepass): boolean
+--[[ Ownership is asked once on join, and a failed web call used to be answered
+     with a flat `false` -- which reads, to every other system, as "this player
+     does not own the pass". UserOwnsGamePassAsync fails for ordinary reasons
+     (throttling, a Roblox API hiccup), so that turned a transient blip into a
+     paying player losing what they bought for the whole session, silently.
+
+     A purchase is the one thing in this game that must not be quietly lost, so
+     this retries before it gives up, and says so loudly when it does. ]]
+local FETCH_ATTEMPTS = 3
+local FETCH_BACKOFF = 1.5
+
+local function fetch(player: Player, pass: Monetization.Gamepass): (boolean, boolean)
 	if not Monetization.isConfigured(pass.assetId) then
-		return false
+		return false, true
 	end
-	local ok, result = pcall(function()
-		return MarketplaceService:UserOwnsGamePassAsync(player.UserId, pass.assetId)
-	end)
-	if not ok then
-		warn(`[PassService] ownership check failed for {player.Name} / {pass.id}: {result}`)
-		return false
+
+	for attempt = 1, FETCH_ATTEMPTS do
+		local ok, result = pcall(function()
+			return MarketplaceService:UserOwnsGamePassAsync(player.UserId, pass.assetId)
+		end)
+		if ok then
+			return result == true, true
+		end
+		if attempt < FETCH_ATTEMPTS and player.Parent then
+			task.wait(FETCH_BACKOFF * attempt)
+		else
+			warn(
+				`[PassService] ownership check for {player.Name} / {pass.id} failed `
+					.. `{FETCH_ATTEMPTS} times: {result}. Treating as not owned for now.`
+			)
+		end
 	end
-	return result == true
+	return false, false
 end
 
-function PassService.refresh(player: Player)
+--[[ Returns whether every pass was answered. A false here means at least one
+     answer is a guess, not a fact, which is why the caller schedules another go. ]]
+function PassService.refresh(player: Player): boolean
 	local map = owned[player]
 	if not map then
 		map = {}
 		owned[player] = map
 	end
+
+	local complete = true
 	for _, pass in Monetization.Gamepasses do
-		local has = fetch(player, pass)
-		if map[pass.id] ~= has then
+		local has, answered = fetch(player, pass)
+		complete = complete and answered
+		-- Only ever move an answer from false to true here. A later failed sweep
+		-- must not take away a pass an earlier successful one confirmed.
+		if has and map[pass.id] ~= true then
+			map[pass.id] = true
+			PassService.Changed:Fire(player, pass.id, true)
+		elseif map[pass.id] == nil then
 			map[pass.id] = has
-			if has then
-				PassService.Changed:Fire(player, pass.id, true)
-			end
 		end
 	end
+	return complete
 end
 
 function PassService.owns(player: Player, passId: string): boolean
@@ -99,9 +128,23 @@ function PassService.anyFlag(player: Player, field: string): boolean
 end
 
 function PassService.start()
+	--[[ Keep sweeping until every pass has a real answer. Without this, a player
+	     who joined during an API blip would stay un-refunded and un-entitled until
+	     they rejoined, and would have no way of knowing why. ]]
 	local function setup(player: Player)
 		owned[player] = {}
-		task.spawn(PassService.refresh, player)
+		task.spawn(function()
+			for attempt = 1, 5 do
+				if not player.Parent then
+					return
+				end
+				if PassService.refresh(player) then
+					return
+				end
+				task.wait(10 * attempt)
+			end
+			warn(`[PassService] gave up confirming pass ownership for {player.Name}`)
+		end)
 	end
 
 	for _, player in Players:GetPlayers() do

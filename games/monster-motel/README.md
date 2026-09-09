@@ -144,8 +144,10 @@ Once it opens:
    you set. Until then the HUD says plainly that nothing is being saved.
 2. **Test with two players** (Test → Clients and Servers → 2 players). Raiding,
    the leaderboards and the celebrity scramble are invisible in single-player.
-3. **Fill in the store ids** in `src/shared/Config/Monetization.lua` when you are
-   ready to sell. Anything left at `0` stays hidden.
+3. **Fill in the store ids** in the `ASSET` block at the top of
+   `src/shared/Config/Monetization.lua` when you are ready to sell. Anything left
+   at `0` stays hidden. Full walkthrough, with prices and the mistakes worth
+   avoiding: [docs/STORE-SETUP.md](docs/STORE-SETUP.md).
 
 The town has 12 plots, so set MaxPlayers to 12 or raise `WorldBuilder.PlotCount`.
 
@@ -227,6 +229,7 @@ src/client/Ui/Theme.lua      The palette and type scale -- the whole look starts
 src/client/Ui/Widgets.lua    Outlines, gradients, buttons, windows, rows, chips
 src/client/            HUD, seven windows, the raid and feedback controllers
 tools/                 Self-test assertions and the balance simulation
+docs/STORE-SETUP.md    Creating the passes on Roblox and wiring the ids in
 docs/FAIRNESS.md       Why nothing sold affects a raid, and how that is enforced
 docs/BALANCE.md        The economy in one formula, and how to re-tune it
 ```

@@ -70,19 +70,66 @@ export type Product = {
 	duration: number?,
 }
 
+--[[ ==========================================================================
+     PASTE YOUR ASSET IDS HERE. This is the only part of this file you need to
+     touch to put the store live.
+
+     Every id starts at 0, which means "not for sale" -- the item is hidden from
+     the store rather than opening a purchase prompt that cannot resolve. Fill
+     one in and that item appears, on its own. There is no other switch.
+
+     Where the numbers come from, once the place is published:
+
+       Gamepasses  Creator Dashboard -> your experience -> Monetization ->
+                   Passes. Create one, open it, and take the number out of the
+                   URL: .../game-pass/1234567890/Name -> 1234567890.
+       Products    same page, Developer Products tab. The dashboard lists the
+                   id in the table; there is no URL to read it from.
+
+     Take the id from the pass's own page, not the experience's. The place id in
+     your address bar while you are editing is a different number and will make
+     every ownership check quietly answer "no".
+
+     Two ids must never be the same. The self-test in tools/ fails if they are,
+     which is worth running after you paste: a duplicate would hand out two
+     passes for one purchase.
+
+     These are read when the server starts, so rebuild and republish after
+     editing. Nothing re-reads this file on a running server.
+     ========================================================================== ]]
+local ASSET = {
+	-- Gamepasses
+	doublecash = 0,
+	vip = 0,
+	autocollect = 0,
+	extrarooms = 0,
+	nightowl = 0,
+	sig_nightmanager = 0,
+	sig_madamevacancy = 0,
+	sig_cousin = 0,
+	expresslane = 0,
+
+	-- Developer products
+	cash_small = 0,
+	cash_medium = 0,
+	cash_large = 0,
+	cash_huge = 0,
+	boost_2x_30 = 0,
+}
+
 local Monetization = {}
 
 Monetization.Gamepasses = {
 	{
 		id = "doublecash",
-		assetId = 0,
+		assetId = ASSET.doublecash,
 		name = "2x Cash",
 		desc = "Every guest pays double rent. Forever, on every server you join.",
 		rentMultiplier = 2,
 	},
 	{
 		id = "vip",
-		assetId = 0,
+		assetId = ASSET.vip,
 		name = "VIP",
 		desc = "+50% rent, a chat tag, a gold motel sign, and the VIP Lounge -- two guests that pay rent without taking a room.",
 		rentMultiplier = 1.5,
@@ -90,21 +137,21 @@ Monetization.Gamepasses = {
 	},
 	{
 		id = "autocollect",
-		assetId = 0,
+		assetId = ASSET.autocollect,
 		name = "Auto Collect",
 		desc = "Rent goes straight to your wallet. No safe to fill up, no walk to the front desk.",
 		autoCollect = true,
 	},
 	{
 		id = "extrarooms",
-		assetId = 0,
+		assetId = ASSET.extrarooms,
 		name = "+5 Rooms",
 		desc = "Five more rooms than your motel could otherwise hold, at every rating.",
 		extraRooms = 5,
 	},
 	{
 		id = "nightowl",
-		assetId = 0,
+		assetId = ASSET.nightowl,
 		name = "Night Owl",
 		desc = "Your motel keeps earning while you are offline, up to 8 hours banked.",
 		offlineEarnings = true,
@@ -116,21 +163,21 @@ Monetization.Gamepasses = {
 	-- not for sale at any price.
 	{
 		id = "sig_nightmanager",
-		assetId = 0,
+		assetId = ASSET.sig_nightmanager,
 		name = "The Night Manager",
 		desc = "A Signature guest paying $30K/s, yours permanently. Can be stolen like anyone else -- if that happens you get them back at sunrise.",
 		signatureGuest = "sig_nightmanager",
 	},
 	{
 		id = "sig_madamevacancy",
-		assetId = 0,
+		assetId = ASSET.sig_madamevacancy,
 		name = "Madame Vacancy",
 		desc = "A Signature guest paying $75K/s, yours permanently. Can be stolen like anyone else -- if that happens you get them back at sunrise.",
 		signatureGuest = "sig_madamevacancy",
 	},
 	{
 		id = "sig_cousin",
-		assetId = 0,
+		assetId = ASSET.sig_cousin,
 		name = "The Owner's Cousin",
 		desc = "A Signature guest paying $160K/s, yours permanently. Can be stolen like anyone else -- if that happens you get them back at sunrise.",
 		signatureGuest = "sig_cousin",
@@ -138,7 +185,7 @@ Monetization.Gamepasses = {
 
 	{
 		id = "expresslane",
-		assetId = 0,
+		assetId = ASSET.expresslane,
 		name = "Express Lane",
 		desc = "New guests pull off the highway twice as often. Same odds -- twice the chances at them.",
 		arrivalSpeed = 2,
@@ -148,7 +195,7 @@ Monetization.Gamepasses = {
 Monetization.Products = {
 	{
 		id = "cash_small",
-		assetId = 0,
+		assetId = ASSET.cash_small,
 		name = "Small Cash Drop",
 		desc = "About 20 minutes of rent at your current rate.",
 		kind = "cash",
@@ -157,7 +204,7 @@ Monetization.Products = {
 	},
 	{
 		id = "cash_medium",
-		assetId = 0,
+		assetId = ASSET.cash_medium,
 		name = "Medium Cash Drop",
 		desc = "About an hour of rent at your current rate.",
 		kind = "cash",
@@ -166,7 +213,7 @@ Monetization.Products = {
 	},
 	{
 		id = "cash_large",
-		assetId = 0,
+		assetId = ASSET.cash_large,
 		name = "Large Cash Drop",
 		desc = "About three hours of rent at your current rate.",
 		kind = "cash",
@@ -175,7 +222,7 @@ Monetization.Products = {
 	},
 	{
 		id = "cash_huge",
-		assetId = 0,
+		assetId = ASSET.cash_huge,
 		name = "Huge Cash Drop",
 		desc = "About ten hours of rent at your current rate.",
 		kind = "cash",
@@ -184,7 +231,7 @@ Monetization.Products = {
 	},
 	{
 		id = "boost_2x_30",
-		assetId = 0,
+		assetId = ASSET.boost_2x_30,
 		name = "2x Rent - 30 minutes",
 		desc = "Doubles rent for 30 minutes. Stacks up to 4 hours of stored time.",
 		kind = "boost",
@@ -218,6 +265,13 @@ Monetization.ForbiddenFields = {
 Monetization.GamepassById = {} :: { [string]: Gamepass }
 Monetization.GamepassByAsset = {} :: { [number]: Gamepass }
 for _, pass in Monetization.Gamepasses do
+	-- A typo'd or missing key in the ASSET block leaves this nil, which without
+	-- the assert surfaces four lines later as "table index is nil" and tells you
+	-- nothing about where to look.
+	assert(
+		type(pass.assetId) == "number",
+		`Monetization: gamepass "{pass.id}" has no entry in the ASSET block at the top of this file`
+	)
 	Monetization.GamepassById[pass.id] = pass
 	if pass.assetId ~= 0 then
 		Monetization.GamepassByAsset[pass.assetId] = pass
@@ -227,11 +281,21 @@ end
 Monetization.ProductById = {} :: { [string]: Product }
 Monetization.ProductByAsset = {} :: { [number]: Product }
 for _, product in Monetization.Products do
+	assert(
+		type(product.assetId) == "number",
+		`Monetization: product "{product.id}" has no entry in the ASSET block at the top of this file`
+	)
 	Monetization.ProductById[product.id] = product
 	if product.assetId ~= 0 then
 		Monetization.ProductByAsset[product.assetId] = product
 	end
 end
+
+--[[ Exposed only so the self-test can assert that the paste block above still
+     covers every item. The promise this file makes is that ASSET is the one place
+     you edit; a pass added later with an inline id would break that promise
+     silently, and the failing check is what stops it. ]]
+Monetization.AssetIds = ASSET
 
 function Monetization.isConfigured(assetId: number): boolean
 	return assetId ~= 0
