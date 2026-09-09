@@ -63,7 +63,7 @@ function StoreWindow.build(parent: ScreenGui, close: () -> ())
 				else
 					row.action.Text = "Get"
 					row.action.BackgroundColor3 = Theme.Color.Robux
-					row.action.TextColor3 = Theme.Color.Panel
+					row.action.TextColor3 = Theme.Color.Ink
 				end
 			end)
 		end
@@ -106,7 +106,7 @@ function StoreWindow.build(parent: ScreenGui, close: () -> ())
 			table.insert(painters, function(state)
 				local owned = (state.passes or {})[pass.id] == true
 				if guest then
-					row.desc.Text = `${Format.short(guest.rent)}/s  ·  <font color='#8A93A6'>{guest.quip}</font>`
+					row.desc.Text = `${Format.short(guest.rent)}/s  ·  <font color='{Theme.Hex.TextDim}'>{guest.quip}</font>`
 				else
 					row.desc.Text = pass.desc
 				end
@@ -118,7 +118,7 @@ function StoreWindow.build(parent: ScreenGui, close: () -> ())
 				else
 					row.action.Text = "Get"
 					row.action.BackgroundColor3 = Theme.Color.Robux
-					row.action.TextColor3 = Theme.Color.Panel
+					row.action.TextColor3 = Theme.Color.Ink
 				end
 			end)
 		end
@@ -155,7 +155,7 @@ function StoreWindow.build(parent: ScreenGui, close: () -> ())
 			table.insert(painters, function(state)
 				if product.kind == "cash" then
 					local amount = (state.productAmounts or {})[product.id] or 0
-					row.desc.Text = `{product.desc}  <font color='#8A93A6'>(${Format.comma(amount)} right now)</font>`
+					row.desc.Text = `{product.desc}  <font color='{Theme.Hex.TextDim}'>(${Format.comma(amount)} right now)</font>`
 					row.action.Text = "Buy"
 				else
 					row.desc.Text = product.desc
@@ -163,7 +163,7 @@ function StoreWindow.build(parent: ScreenGui, close: () -> ())
 					row.action.Text = if remaining > 0 then "Extend" else "Buy"
 				end
 				row.action.BackgroundColor3 = Theme.Color.Robux
-				row.action.TextColor3 = Theme.Color.Panel
+				row.action.TextColor3 = Theme.Color.Ink
 			end)
 		end
 	end

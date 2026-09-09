@@ -114,7 +114,7 @@ function GuestsWindow.build(parent: ScreenGui, close: () -> ())
 			row.title.Text = `{entry.name}  <font color='#{color:ToHex()}'>{entry.rarity}</font>`
 			row.desc.Text = if housed
 				then `Room {entry.room}  ·  paying ${Format.short(entry.rent)}/s`
-				else `<font color='#8A93A6'>In storage  ·  would pay ${Format.short(entry.rent)}/s</font>`
+				else `<font color='{Theme.Hex.TextDim}'>In storage  ·  would pay ${Format.short(entry.rent)}/s</font>`
 
 			if housed then
 				row.action.Text = "To storage"
@@ -126,7 +126,7 @@ function GuestsWindow.build(parent: ScreenGui, close: () -> ())
 			else
 				row.action.Text = "Give a room"
 				row.action.BackgroundColor3 = Theme.Color.Cash
-				row.action.TextColor3 = Theme.Color.Panel
+				row.action.TextColor3 = Theme.Color.Ink
 				row.action.Activated:Connect(function()
 					Actions.invoke("houseGuest", { uid = entry.uid }, true)
 				end)

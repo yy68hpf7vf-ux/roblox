@@ -46,7 +46,7 @@ function RenovateWindow.build(parent: ScreenGui, close: () -> ())
 	Widgets.label({
 		Text = "<b>You keep:</b> every guest you own, every Star, every Star Shop level."
 			.. "\n<b>You lose:</b> your cash, your rooms, your rating, your lock and your safe."
-			.. "\n<font color='#8A93A6'>Guests move to storage and go straight back in as you rebuild.</font>",
+			.. `\n<font color='{Theme.Hex.TextDim}'>Guests move to storage and go straight back in as you rebuild.</font>`,
 		TextColor3 = Theme.Color.TextFaint,
 		TextSize = 12.5,
 		Position = UDim2.fromOffset(0, 72),
@@ -130,7 +130,7 @@ function RenovateWindow.build(parent: ScreenGui, close: () -> ())
 		if prestige.canRenovate then
 			renovateButton.Text = `Renovate for {pending} Star{if pending == 1 then "" else "s"}`
 			renovateButton.BackgroundColor3 = Theme.Color.Star
-			renovateButton.TextColor3 = Theme.Color.Panel
+			renovateButton.TextColor3 = Theme.Color.Ink
 		else
 			renovateButton.Text = prestige.blockedReason or "Not yet"
 			renovateButton.BackgroundColor3 = Theme.Color.PanelRaised
@@ -141,7 +141,7 @@ function RenovateWindow.build(parent: ScreenGui, close: () -> ())
 
 		for index, upgrade in prestige.upgrades or {} do
 			local row = rowFor(upgrade, index)
-			row.title.Text = `{upgrade.name}  <font color='#8A93A6'>level {upgrade.level}/{upgrade.maxLevel}</font>`
+			row.title.Text = `{upgrade.name}  <font color='{Theme.Hex.TextDim}'>level {upgrade.level}/{upgrade.maxLevel}</font>`
 
 			local bonus = upgrade.perLevel * upgrade.level
 			local shown
@@ -152,7 +152,7 @@ function RenovateWindow.build(parent: ScreenGui, close: () -> ())
 			else
 				shown = `+{string.format("%.1f", bonus)}s on your lock`
 			end
-			row.desc.Text = `{upgrade.desc}  <font color='#8A93A6'>({shown} now)</font>`
+			row.desc.Text = `{upgrade.desc}  <font color='{Theme.Hex.TextDim}'>({shown} now)</font>`
 
 			if upgrade.maxed then
 				row.action.Text = "Maxed"

@@ -109,7 +109,7 @@ function ArrivalsWindow.build(parent: ScreenGui, close: () -> ())
 				local color = Theme.Rarity[slot.rarity] or Theme.Color.TextDim
 				row.swatch.BackgroundColor3 = color
 				row.title.Text = `{slot.name}  <font color='#{color:ToHex()}'>{slot.rarity}</font>`
-				row.desc.Text = `${Format.short(slot.rent)}/s  ·  <font color='#8A93A6'>{slot.quip}</font>`
+				row.desc.Text = `${Format.short(slot.rent)}/s  ·  <font color='{Theme.Hex.TextDim}'>{slot.quip}</font>`
 
 				if full then
 					row.action.Text = "No rooms"

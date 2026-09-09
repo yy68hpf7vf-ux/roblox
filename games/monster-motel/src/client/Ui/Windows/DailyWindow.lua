@@ -173,7 +173,7 @@ function DailyWindow.build(parent: ScreenGui, close: () -> ())
 				.. (if (daily.stars or 0) > 0 then ` and {daily.stars} Stars.` else ".")
 			loginButton.Text = "Claim"
 			loginButton.BackgroundColor3 = Theme.Color.Good
-			loginButton.TextColor3 = Theme.Color.Panel
+			loginButton.TextColor3 = Theme.Color.Ink
 		else
 			loginDetail.Text = `Claimed today. Streak is {daily.streak or 0}.`
 				.. "\nMiss a day and the streak survives; miss two and it restarts."
@@ -198,7 +198,7 @@ function DailyWindow.build(parent: ScreenGui, close: () -> ())
 			playDetail.Text = `{claimed}/{total} collected. Next up: {play.nextLabel} for ${Format.short(play.nextCash or 0)}.`
 			playButton.Text = "Claim"
 			playButton.BackgroundColor3 = Theme.Color.Good
-			playButton.TextColor3 = Theme.Color.Panel
+			playButton.TextColor3 = Theme.Color.Ink
 		else
 			local into = (play.seconds or 0) % interval
 			playDetail.Text = `{claimed}/{total} collected. Next reward in {Format.duration(interval - into)}.`
@@ -228,7 +228,7 @@ function DailyWindow.build(parent: ScreenGui, close: () -> ())
 			elseif quest.complete then
 				row.action.Text = "Claim"
 				row.action.BackgroundColor3 = Theme.Color.Good
-				row.action.TextColor3 = Theme.Color.Panel
+				row.action.TextColor3 = Theme.Color.Ink
 			else
 				row.action.Text = `{math.floor((quest.progress / math.max(1, quest.target)) * 100)}%`
 				row.action.BackgroundColor3 = Theme.Color.PanelRaised

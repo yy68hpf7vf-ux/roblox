@@ -75,7 +75,7 @@ function IndexWindow.build(parent: ScreenGui, close: () -> ())
 				row.swatch.BackgroundColor3 = guest.color
 				row.title.Text = guest.name
 				row.title.TextColor3 = Theme.Color.Text
-				row.desc.Text = `${Format.short(guest.rent)}/s  ·  <font color='#8A93A6'>{guest.quip}</font>`
+				row.desc.Text = `${Format.short(guest.rent)}/s  ·  <font color='{Theme.Hex.TextDim}'>{guest.quip}</font>`
 				row.action.Text = "Found"
 				row.action.BackgroundColor3 = Theme.Color.PanelRaised
 				row.action.TextColor3 = color
@@ -85,7 +85,7 @@ function IndexWindow.build(parent: ScreenGui, close: () -> ())
 				row.swatch.BackgroundColor3 = Theme.Color.PanelSunken
 				row.title.Text = "? ? ?"
 				row.title.TextColor3 = Theme.Color.TextFaint
-				row.desc.Text = `${Format.short(guest.rent)}/s  ·  <font color='#5A6172'>not met yet</font>`
+				row.desc.Text = `${Format.short(guest.rent)}/s  ·  <font color='{Theme.Hex.TextFaint}'>not met yet</font>`
 				row.action.Text = "—"
 				row.action.BackgroundColor3 = Theme.Color.PanelSunken
 				row.action.TextColor3 = Theme.Color.TextFaint
@@ -102,7 +102,7 @@ function IndexWindow.build(parent: ScreenGui, close: () -> ())
 				end
 			end
 			local color = Guests.RarityColor[rarity] or Theme.Color.TextDim
-			label.Text = `{rarity}  <font color='#8A93A6'>{count}/{#pool}</font>`
+			label.Text = `{rarity}  <font color='{Theme.Hex.TextDim}'>{count}/{#pool}</font>`
 				.. (if count == #pool then `  <font color='#{color:ToHex()}'>complete</font>` else "")
 		end
 

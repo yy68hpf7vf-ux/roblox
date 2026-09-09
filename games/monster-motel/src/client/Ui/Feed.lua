@@ -44,7 +44,7 @@ function Feed.mount(parent: ScreenGui)
 		AnchorPoint = Vector2.new(1, 1),
 		-- Lifted clear of the nav row, which is centred but wide enough to reach
 		-- into this corner on a narrow window.
-		Position = UDim2.new(1, -14, 1, -72),
+		Position = UDim2.new(1, -14, 1, -80),
 		Size = UDim2.fromOffset(320, 200),
 		BackgroundTransparency = 1,
 		Parent = parent,

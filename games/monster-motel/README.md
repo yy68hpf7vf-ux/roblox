@@ -139,8 +139,22 @@ The town has 12 plots, so set MaxPlayers to 12 or raise `WorldBuilder.PlotCount`
 
 **Workspace opens empty, and that is correct.** There is no map to look at in edit
 mode because there is no map until the server runs -- `WorldBuilder` builds the
-road, all twelve motels and the square when you press Play. If you want to inspect
-the geometry, press Play and switch to the Server view.
+road, all twelve motels and the square when you press Play.
+
+If you want the town sitting there in edit mode -- to look around it, to place
+something by hand, or just to be sure it exists -- paste this into the Studio
+**Command Bar** (View → Command Bar) and press Enter:
+
+```lua
+require(game.ServerScriptService.Server.World.WorldBuilder).build()
+```
+
+The whole town appears as ordinary parts under `Workspace.World`, and saving the
+place saves it. This is safe to do as often as you like: `build()` deletes any
+existing `World` folder before it starts, so the server rebuilds from scratch on
+every run either way and a baked copy can never drift from the code or end up
+duplicated. Treat it as a preview, not as the source of truth -- the source of
+truth is `WorldBuilder.lua`.
 
 **Instance streaming is deliberately off.** Motels sit on a ring 640 studs across
 and the game asks you to read a VACANCY board from the far side of it, spot a
@@ -197,11 +211,31 @@ src/server/Services/   One responsibility each
   FeedService          What the rest of the server is up to, filtered hard
 src/replicatedfirst/   The loading screen
 src/server/World/      Builds the town at runtime
+src/client/Ui/Theme.lua      The palette and type scale -- the whole look starts here
+src/client/Ui/Widgets.lua    Outlines, gradients, buttons, windows, rows, chips
 src/client/            HUD, seven windows, the raid and feedback controllers
 tools/                 Self-test assertions and the balance simulation
 docs/FAIRNESS.md       Why nothing sold affects a raid, and how that is enforced
 docs/BALANCE.md        The economy in one formula, and how to re-tune it
 ```
+
+## The look
+
+`Ui/Theme.lua` and `Ui/Widgets.lua` are the whole visual design; no window code
+knows what a border is. Three rules hold it together:
+
+- **Everything raised gets an Ink outline.** A fat, purple-black cartoon stroke is
+  the single thing that separates a game's interface from a settings screen.
+- **Everything raised gets a top-down gradient.** It is a `UIGradient`, which
+  *multiplies* the instance's own colour, so a button repainted green on one state
+  push and pink on the next keeps identical lighting -- and a repaint can never
+  fight it. That is the reason it is a gradient and not a second hard-coded colour.
+- **Saturated beats tasteful.** Deep purple, neon pink, acid green, gold. Muted
+  greys read as a dev tool, and this is a game about monsters robbing each other.
+
+Type is `Bangers` for the few things that shout, `FredokaOne` for headings, Gotham
+Bold for copy. Heading and display text gets an Ink outline automatically, decided
+by `Widgets.label` from the font it was handed, so no window has to remember it.
 
 ## A note on the design
 

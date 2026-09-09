@@ -26,14 +26,18 @@ local Widgets = require(script.Parent.Widgets)
 
 local Hud = {}
 
+--[[ Each tab carries its own colour. Seven identical slabs is the shape every
+     generated interface lands on, and it also costs you the thing a nav bar is
+     for: after a day of playing you should be reaching for the green one, not
+     reading the labels. Store is the odd one out on purpose -- Robux green. ]]
 local NAV = {
-	{ id = "arrivals", label = "Arrivals" },
-	{ id = "guests", label = "Guests" },
-	{ id = "index", label = "Index" },
-	{ id = "motel", label = "Motel" },
-	{ id = "renovate", label = "Renovate" },
-	{ id = "daily", label = "Daily" },
-	{ id = "store", label = "Store" },
+	{ id = "arrivals", label = "Arrivals", color = Color3.fromRGB(255, 138, 92) },
+	{ id = "guests", label = "Guests", color = Color3.fromRGB(122, 176, 255) },
+	{ id = "index", label = "Index", color = Color3.fromRGB(186, 132, 255) },
+	{ id = "motel", label = "Motel", color = Color3.fromRGB(86, 216, 190) },
+	{ id = "renovate", label = "Renovate", color = Color3.fromRGB(255, 202, 64) },
+	{ id = "daily", label = "Daily", color = Color3.fromRGB(255, 122, 176) },
+	{ id = "store", label = "Store", color = Color3.fromRGB(0, 196, 124) },
 }
 
 export type Handle = {
@@ -46,52 +50,50 @@ function Hud.build(parent: ScreenGui, openWindow: (string) -> ()): Handle
 	local wallet = Widgets.panel({
 		Name = "Wallet",
 		Position = UDim2.fromOffset(14, 14),
-		Size = UDim2.fromOffset(266, 132),
+		Size = UDim2.fromOffset(280, 168),
 		BackgroundColor3 = Theme.Color.Panel,
 		Parent = parent,
 	})
 	Widgets.padding(12).Parent = wallet
 
-	local cash = Widgets.label({
-		Text = "$0",
-		Font = Theme.Font.Heading,
-		TextSize = 27,
-		TextColor3 = Theme.Color.Cash,
-		Size = UDim2.new(1, 0, 0, 30),
+	--[[ Cash and Stars are chips rather than lines of text. They are the two
+	     numbers a player checks constantly, and a chip gives each one a fixed
+	     shape and a token that never moves, so the eye finds it without reading. ]]
+	local cashPill = Widgets.pill({
+		Size = UDim2.new(1, 0, 0, 46),
 		Parent = wallet,
-	})
+	}, Theme.Color.Cash, "$")
+	local cash = cashPill.value
 
-	local stars = Widgets.label({
-		Text = "0 Stars",
-		TextSize = 13,
-		TextColor3 = Theme.Color.Star,
-		Position = UDim2.fromOffset(0, 32),
-		Size = UDim2.new(1, 0, 0, 18),
+	local starPill = Widgets.pill({
+		Position = UDim2.fromOffset(0, 52),
+		Size = UDim2.new(1, 0, 0, 34),
 		Parent = wallet,
-	})
+	}, Theme.Color.Star, "★")
+	local stars = starPill.value
 
 	local safeLabel = Widgets.label({
 		Text = "Safe",
 		TextSize = 12.5,
 		TextColor3 = Theme.Color.TextDim,
-		Position = UDim2.fromOffset(0, 54),
+		Position = UDim2.fromOffset(2, 92),
 		Size = UDim2.new(1, 0, 0, 16),
 		Parent = wallet,
 	})
 
 	local _, safeFill = Widgets.bar({
-		Position = UDim2.fromOffset(0, 74),
-		Size = UDim2.new(1, 0, 0, 8),
+		Position = UDim2.fromOffset(0, 112),
+		Size = UDim2.new(1, 0, 0, 12),
 		Parent = wallet,
 	}, Theme.Color.Safe)
 
 	local rentLabel = Widgets.label({
 		Text = "$0/s",
 		Font = Theme.Font.Heading,
-		TextSize = 14,
+		TextSize = 16,
 		TextColor3 = Theme.Color.Cash,
-		Position = UDim2.fromOffset(0, 88),
-		Size = UDim2.new(1, 0, 0, 18),
+		Position = UDim2.fromOffset(2, 128),
+		Size = UDim2.new(1, 0, 0, 20),
 		Parent = wallet,
 	})
 
@@ -99,7 +101,7 @@ function Hud.build(parent: ScreenGui, openWindow: (string) -> ()): Handle
 		Text = "",
 		TextSize = 12,
 		TextColor3 = Theme.Color.TextFaint,
-		Position = UDim2.fromOffset(0, 108),
+		Position = UDim2.fromOffset(2, 148),
 		Size = UDim2.new(1, 0, 0, 16),
 		Parent = wallet,
 	})
@@ -107,8 +109,8 @@ function Hud.build(parent: ScreenGui, openWindow: (string) -> ()): Handle
 	-- ------------------------------------------------------------ objective
 	local objective = Widgets.panel({
 		Name = "Objective",
-		Position = UDim2.fromOffset(14, 154),
-		Size = UDim2.fromOffset(266, 76),
+		Position = UDim2.fromOffset(14, 194),
+		Size = UDim2.fromOffset(280, 80),
 		BackgroundColor3 = Theme.Color.Panel,
 		Visible = false,
 		Parent = parent,
@@ -299,7 +301,7 @@ function Hud.build(parent: ScreenGui, openWindow: (string) -> ()): Handle
 		Name = "Nav",
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, -14),
-		Size = UDim2.fromOffset(#NAV * 96, 46),
+		Size = UDim2.fromOffset(#NAV * 102, 52),
 		BackgroundTransparency = 1,
 		Parent = parent,
 	}, {
@@ -310,10 +312,10 @@ function Hud.build(parent: ScreenGui, openWindow: (string) -> ()): Handle
 		Widgets.button({
 			Text = entry.label,
 			LayoutOrder = index,
-			Size = UDim2.fromOffset(88, 46),
-			TextSize = 14,
-			BackgroundColor3 = Theme.Color.PanelRaised,
-			TextColor3 = Theme.Color.Text,
+			Size = UDim2.fromOffset(94, 52),
+			TextSize = 16,
+			BackgroundColor3 = entry.color,
+			TextColor3 = Theme.Color.Ink,
 			Parent = nav,
 		}, function()
 			openWindow(entry.id)
@@ -327,7 +329,7 @@ function Hud.build(parent: ScreenGui, openWindow: (string) -> ()): Handle
 		end
 
 		cash.Text = `${Format.short(state.cash)}`
-		stars.Text = `{Format.comma(state.stars or 0)} Stars  ·  {(state.prestige or {}).renovations or 0} renovations`
+		stars.Text = Format.comma(state.stars or 0)
 
 		local capacity = math.max(1, state.safeCapacity or 1)
 		local held = state.safe or 0
@@ -337,15 +339,17 @@ function Hud.build(parent: ScreenGui, openWindow: (string) -> ()): Handle
 		if state.autoCollect then
 			safeFill.Size = UDim2.fromScale(1, 1)
 			safeFill.BackgroundColor3 = Theme.Color.Good
-			safeLabel.Text = "Safe  ·  <font color='#5FDC8A'>Auto Collect</font>"
+			safeLabel.Text = `Safe  ·  <font color='{Theme.Hex.Good}'>Auto Collect</font>`
 		else
 			safeFill.BackgroundColor3 = if ratio >= 1 then Theme.Color.Warn else Theme.Color.Safe
 			safeLabel.Text = `Safe  ${Format.short(held)} / ${Format.short(capacity)}`
-				.. (if ratio >= 1 then "  ·  <font color='#FFB05C'>FULL</font>" else "")
+				.. (if ratio >= 1 then `  ·  <font color='{Theme.Hex.Warn}'>FULL</font>` else "")
 		end
 
 		rentLabel.Text = `${Format.short(state.rentPerSecond or 0)}/s  ·  {Format.multiplier(state.rentMultiplier or 1)}`
+		local renovations = (state.prestige or {}).renovations or 0
 		roomsLabel.Text = `{state.housed or 0}/{state.capacity or 0} rooms  ·  {(state.motel or {}).ratingName or ""}`
+			.. (if renovations > 0 then `  ·  {renovations} renovations` else "")
 
 		-- Night clock
 		local night = state.night or {}

@@ -175,7 +175,7 @@ function MotelWindow.build(parent: ScreenGui, close: () -> ())
 		upgradesPane.Visible = activeTab == "Upgrades"
 
 		-- Rooms
-		roomRow.title.Text = `Rooms  <font color='#8A93A6'>{motel.rooms or 0} / {motel.maxRooms or 0}</font>`
+		roomRow.title.Text = `Rooms  <font color='{Theme.Hex.TextDim}'>{motel.rooms or 0} / {motel.maxRooms or 0}</font>`
 		roomRow.desc.Text = "One more guest can pay rent at the same time."
 		if (motel.rooms or 0) >= (motel.maxRooms or 0) then
 			maxedButton(roomRow, "At the cap")
@@ -185,7 +185,7 @@ function MotelWindow.build(parent: ScreenGui, close: () -> ())
 		end
 
 		-- Rating
-		ratingRow.title.Text = `Rating  <font color='#8A93A6'>{motel.ratingName or ""}</font>`
+		ratingRow.title.Text = `Rating  <font color='{Theme.Hex.TextDim}'>{motel.ratingName or ""}</font>`
 		if motel.nextRatingName then
 			ratingRow.desc.Text = `Next: {motel.nextRatingName} -- {motel.nextRatingDesc or ""}`
 			priceButton(ratingRow, motel.ratingCost or 0, cash)
@@ -195,7 +195,7 @@ function MotelWindow.build(parent: ScreenGui, close: () -> ())
 		end
 
 		-- Lock
-		lockRow.title.Text = `Door lock  <font color='#8A93A6'>{motel.lockName or "No Lock"}</font>`
+		lockRow.title.Text = `Door lock  <font color='{Theme.Hex.TextDim}'>{motel.lockName or "No Lock"}</font>`
 		lockRow.desc.Text = `Thieves need {motel.breakSeconds or 0}s on your door.`
 		if motel.nextLockName then
 			priceButton(lockRow, motel.lockCost or 0, cash)
@@ -204,7 +204,7 @@ function MotelWindow.build(parent: ScreenGui, close: () -> ())
 		end
 
 		-- Safe
-		safeRow.title.Text = `Safe  <font color='#8A93A6'>{Format.duration(motel.safeSeconds or 0)} of rent</font>`
+		safeRow.title.Text = `Safe  <font color='{Theme.Hex.TextDim}'>{Format.duration(motel.safeSeconds or 0)} of rent</font>`
 		if motel.nextSafeSeconds then
 			safeRow.desc.Text = `Holds {Format.duration(motel.nextSafeSeconds)} before it stops filling.`
 			priceButton(safeRow, motel.safeCost or 0, cash)
@@ -216,7 +216,7 @@ function MotelWindow.build(parent: ScreenGui, close: () -> ())
 		-- Levelled upgrades
 		for index, upgrade in motel.upgrades or {} do
 			local row = upgradeRow(upgrade.id, index)
-			row.title.Text = `{upgrade.name}  <font color='#8A93A6'>level {upgrade.level}/{upgrade.maxLevel}</font>`
+			row.title.Text = `{upgrade.name}  <font color='{Theme.Hex.TextDim}'>level {upgrade.level}/{upgrade.maxLevel}</font>`
 			row.desc.Text = describe(upgrade, motel)
 
 			if upgrade.maxed then

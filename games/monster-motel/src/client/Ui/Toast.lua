@@ -45,29 +45,34 @@ function Toast.push(message: string, kind: string?)
 
 	local color = COLORS[kind or "info"] or Theme.Color.Accent
 
+	--[[ The whole bar takes the kind's colour rather than a dark panel with a
+	     coloured hairline. A toast has about a second to tell you whether what
+	     just happened was good or bad, and colour does that before the words do. ]]
 	local frame = Widgets.new("Frame", {
-		BackgroundColor3 = Theme.Color.Panel,
-		BackgroundTransparency = 0.06,
+		BackgroundColor3 = color,
 		BorderSizePixel = 0,
-		Size = UDim2.new(1, 0, 0, 34),
+		Size = UDim2.new(1, 0, 0, 40),
 		Parent = container,
 	}) :: Frame
-	Widgets.corner(Theme.Size.CornerSmall).Parent = frame
-	Widgets.stroke(color, 1.2).Parent = frame
+	Widgets.corner(UDim.new(1, 0)).Parent = frame
+	Widgets.stroke(Theme.Color.Ink, Theme.Size.Outline).Parent = frame
+	Widgets.gradient().Parent = frame
 
 	local label = Widgets.label({
 		Text = message,
-		TextColor3 = Theme.Color.Text,
-		TextSize = 14,
+		Font = Theme.Font.Heading,
+		TextColor3 = Theme.Color.Ink,
+		TextSize = 15,
 		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.new(1, -16, 1, 0),
-		Position = UDim2.fromOffset(8, 0),
+		Size = UDim2.new(1, -24, 1, 0),
+		Position = UDim2.fromOffset(12, 0),
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		Parent = frame,
 	})
 
 	table.insert(active, 1, frame)
-	frame.LayoutOrder = -os.clock() * 1000
+	-- Floored: LayoutOrder is an integer property, and os.clock() is not.
+	frame.LayoutOrder = -math.floor(os.clock() * 1000)
 
 	-- Retire the oldest rather than letting a burst of messages fill the screen.
 	while #active > MAX_VISIBLE do
@@ -89,9 +94,13 @@ function Toast.push(message: string, kind: string?)
 		local fade = TweenInfo.new(0.25)
 		TweenService:Create(frame, fade, { BackgroundTransparency = 1 }):Play()
 		TweenService:Create(label, fade, { TextTransparency = 1 }):Play()
-		local stroke = frame:FindFirstChildOfClass("UIStroke")
-		if stroke then
-			TweenService:Create(stroke, fade, { Transparency = 1 }):Play()
+		-- Both outlines: the bar's border, and the Ink stroke Widgets.label puts on
+		-- heading text. Missing the second one leaves the letters behind as ghosts.
+		for _, host in { frame :: Instance, label :: Instance } do
+			local stroke = host:FindFirstChildOfClass("UIStroke")
+			if stroke then
+				TweenService:Create(stroke, fade, { Transparency = 1 }):Play()
+			end
 		end
 
 		task.delay(0.3, function()

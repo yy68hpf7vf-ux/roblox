@@ -214,12 +214,15 @@ local function release()
 end
 
 function RaidController.start(parent: ScreenGui)
+	--[[ Bright rather than another dark panel. This is the one piece of interface
+	     that appears exactly when there is something to do and vanishes when there
+	     is not, so it should read as an offer, not as a status line. ]]
 	promptPanel = Widgets.panel({
 		Name = "Prompt",
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -240),
-		Size = UDim2.fromOffset(360, 40),
-		BackgroundColor3 = Theme.Color.Panel,
+		Position = UDim2.new(0.5, 0, 1, -250),
+		Size = UDim2.fromOffset(380, 48),
+		BackgroundColor3 = Theme.Color.Accent,
 		Visible = false,
 		Parent = parent,
 	})
@@ -227,7 +230,8 @@ function RaidController.start(parent: ScreenGui)
 	promptLabel = Widgets.label({
 		Text = "",
 		Font = Theme.Font.Heading,
-		TextSize = 15,
+		TextSize = 18,
+		TextColor3 = Theme.Color.Ink,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Size = UDim2.fromScale(1, 1),
 		Parent = promptPanel,
