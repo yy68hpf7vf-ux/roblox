@@ -33,7 +33,7 @@
       "$className": "Workspace",
       "$properties": {
         "FilteringEnabled": true,
-        "StreamingEnabled": true
+        "StreamingEnabled": false
       }
     },
     "Lighting": {

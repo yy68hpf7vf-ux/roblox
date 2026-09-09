@@ -137,6 +137,19 @@ Once it opens:
 
 The town has 12 plots, so set MaxPlayers to 12 or raise `WorldBuilder.PlotCount`.
 
+**Workspace opens empty, and that is correct.** There is no map to look at in edit
+mode because there is no map until the server runs -- `WorldBuilder` builds the
+road, all twelve motels and the square when you press Play. If you want to inspect
+the geometry, press Play and switch to the Server view.
+
+**Instance streaming is deliberately off.** Motels sit on a ring 640 studs across
+and the game asks you to read a VACANCY board from the far side of it, spot a
+thief leaving somebody else's motel, and see the celebrity land in the square from
+your own front desk. Streaming decides what a client can see by distance, which is
+exactly the decision this game needs to make for itself. The town is a few hundred
+parts, far below the scale streaming exists for, so it costs nothing to send all of
+it. Turning it back on will make distant motels and the celebrity pop in and out.
+
 ## Checking a change
 
 ```bash
