@@ -30,14 +30,22 @@ local Hud = {}
      generated interface lands on, and it also costs you the thing a nav bar is
      for: after a day of playing you should be reaching for the green one, not
      reading the labels. Store is the odd one out on purpose -- Robux green. ]]
+--[[ Each tab carries its own colour and a glyph. Seven identical slabs is the
+     shape every generated interface lands on, and it also costs you the thing a
+     nav bar is for: after a day of playing you should be reaching for the green
+     one with the trolley, not reading seven words. Store is Robux green on
+     purpose -- the one button that spends real money should not be a surprise.
+
+     Glyphs are text, not images. An icon set means either uploading assets you
+     then have to keep, or borrowing somebody else's -- and emoji render fine. ]]
 local NAV = {
-	{ id = "arrivals", label = "Arrivals", color = Color3.fromRGB(255, 138, 92) },
-	{ id = "guests", label = "Guests", color = Color3.fromRGB(122, 176, 255) },
-	{ id = "index", label = "Index", color = Color3.fromRGB(186, 132, 255) },
-	{ id = "motel", label = "Motel", color = Color3.fromRGB(86, 216, 190) },
-	{ id = "renovate", label = "Renovate", color = Color3.fromRGB(255, 202, 64) },
-	{ id = "daily", label = "Daily", color = Color3.fromRGB(255, 122, 176) },
-	{ id = "store", label = "Store", color = Color3.fromRGB(0, 196, 124) },
+	{ id = "arrivals", label = "Arrivals", glyph = "🚐", color = Color3.fromRGB(255, 138, 92) },
+	{ id = "guests", label = "Guests", glyph = "👾", color = Color3.fromRGB(122, 176, 255) },
+	{ id = "index", label = "Index", glyph = "📖", color = Color3.fromRGB(186, 132, 255) },
+	{ id = "motel", label = "Motel", glyph = "🏨", color = Color3.fromRGB(86, 216, 190) },
+	{ id = "renovate", label = "Renovate", glyph = "⭐", color = Color3.fromRGB(255, 202, 64) },
+	{ id = "daily", label = "Daily", glyph = "🎁", color = Color3.fromRGB(255, 122, 176) },
+	{ id = "store", label = "Store", glyph = "🛒", color = Color3.fromRGB(0, 196, 124) },
 }
 
 export type Handle = {
@@ -281,7 +289,8 @@ function Hud.build(parent: ScreenGui, openWindow: (string) -> ()): Handle
 	local warning = Widgets.panel({
 		Name = "Warning",
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -78),
+		-- Clear of the nav row, which now stands 66 tall from 14px off the bottom.
+		Position = UDim2.new(0.5, 0, 1, -90),
 		Size = UDim2.fromOffset(430, 32),
 		BackgroundColor3 = Theme.Color.Panel,
 		Visible = false,
@@ -301,7 +310,7 @@ function Hud.build(parent: ScreenGui, openWindow: (string) -> ()): Handle
 		Name = "Nav",
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, -14),
-		Size = UDim2.fromOffset(#NAV * 102, 52),
+		Size = UDim2.fromOffset(#NAV * 102, 66),
 		BackgroundTransparency = 1,
 		Parent = parent,
 	}, {
@@ -309,17 +318,38 @@ function Hud.build(parent: ScreenGui, openWindow: (string) -> ()): Handle
 	})
 
 	for index, entry in NAV do
-		Widgets.button({
-			Text = entry.label,
+		-- The button owns no text of its own; the glyph and the word are children,
+		-- stacked. Nav buttons are built once and never repainted, so nothing here
+		-- has to survive a state push.
+		local button = Widgets.button({
+			Text = "",
 			LayoutOrder = index,
-			Size = UDim2.fromOffset(94, 52),
-			TextSize = 16,
+			Size = UDim2.fromOffset(94, 66),
 			BackgroundColor3 = entry.color,
-			TextColor3 = Theme.Color.Ink,
 			Parent = nav,
 		}, function()
 			openWindow(entry.id)
 		end)
+
+		Widgets.label({
+			Text = entry.glyph,
+			TextSize = 22,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Position = UDim2.fromOffset(0, 6),
+			Size = UDim2.new(1, 0, 0, 26),
+			Parent = button,
+		})
+
+		Widgets.label({
+			Text = entry.label,
+			Font = Theme.Font.Heading,
+			TextSize = 15,
+			TextColor3 = Theme.Color.Ink,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Position = UDim2.fromOffset(0, 34),
+			Size = UDim2.new(1, 0, 0, 22),
+			Parent = button,
+		})
 	end
 
 	-- ------------------------------------------------------------ refresh

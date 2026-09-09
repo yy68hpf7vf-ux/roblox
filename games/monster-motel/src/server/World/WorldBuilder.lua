@@ -32,6 +32,7 @@
 local Guests = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Config.Guests)
 local GameConfig = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Config.GameConfig)
 local Ratings = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Config.Ratings)
+local Format = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Util.Format)
 
 local WorldBuilder = {}
 
@@ -43,9 +44,30 @@ local ROAD_WIDTH = 34
 local PLOT_SIZE = Vector3.new(120, 4, 120)
 local SQUARE_SIZE = 210
 
-local ASPHALT = Color3.fromRGB(58, 58, 64)
-local KERB = Color3.fromRGB(176, 176, 168)
-local GRASS = Color3.fromRGB(88, 122, 74)
+local ASPHALT = Color3.fromRGB(74, 72, 88)
+local KERB = Color3.fromRGB(226, 224, 232)
+-- Bright, saturated grass. The old olive read as a realistic lawn, which is the
+-- wrong reference: this is a cartoon town and the ground is most of the screen.
+local GRASS = Color3.fromRGB(124, 194, 96)
+
+--[[ One bright colour per plot, worn on the room podiums and the kerb. Twelve
+     identical buildings on a ring are genuinely hard to tell apart at speed, and
+     in a game about running to somebody else's motel that costs you: "the pink
+     one" is a direction, "the third one clockwise" is arithmetic. ]]
+local PLOT_ACCENT = {
+	Color3.fromRGB(255, 96, 120),
+	Color3.fromRGB(255, 152, 64),
+	Color3.fromRGB(255, 206, 72),
+	Color3.fromRGB(168, 226, 80),
+	Color3.fromRGB(86, 220, 132),
+	Color3.fromRGB(72, 214, 200),
+	Color3.fromRGB(88, 178, 255),
+	Color3.fromRGB(126, 138, 255),
+	Color3.fromRGB(176, 120, 255),
+	Color3.fromRGB(232, 112, 232),
+	Color3.fromRGB(255, 108, 176),
+	Color3.fromRGB(255, 138, 92),
+}
 local WALL = Color3.fromRGB(206, 186, 150)
 local WALL_TRIM = Color3.fromRGB(140, 84, 72)
 local ROOF = Color3.fromRGB(112, 68, 60)
@@ -68,6 +90,7 @@ export type Plot = {
 	desk: BasePart,
 	sign: BasePart,
 	roomMarkers: { BasePart },
+	roomBases: { BasePart },
 	nameLabel: TextLabel,
 	rentLabel: TextLabel,
 	vacancyLabel: TextLabel,
@@ -77,6 +100,7 @@ export type Plot = {
 	wallParts: { BasePart },
 	roofParts: { BasePart },
 	appliedRating: number,
+	appliedRooms: number,
 }
 
 --[[ How the building is painted at each rating. Grey and utilitarian at the
@@ -188,36 +212,78 @@ local function lampPost(parent: Instance, position: Vector3)
 	streetLight(head, Color3.fromRGB(255, 226, 170), 34, 2)
 end
 
+--[[ A world-space label: a solid dark plaque with a fat outline, not floating
+     text. Two reasons it is a panel rather than a TextLabel with a stroke.
+
+     Readability -- text alone has to survive whatever is behind it, and the
+     things these sit on top of are a bright forecourt by day and a black street
+     at night. A plaque carries its own background, so it reads against both.
+
+     And it matches the interface. The same Ink outline and fat corner is on
+     every button in the HUD, so a sign over a guest looks like part of the same
+     game rather than a debug label someone left on. ]]
+local LABEL_INK = Color3.fromRGB(20, 12, 38)
+
 local function billboard(adornee: BasePart, height: number, width: number): (BillboardGui, TextLabel, TextLabel)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "Label"
-	gui.Size = UDim2.fromScale(width, width * 0.3)
+	gui.Size = UDim2.fromScale(width, width * 0.34)
 	gui.StudsOffsetWorldSpace = Vector3.new(0, height, 0)
 	gui.MaxDistance = 500
 	gui.Parent = adornee
 
+	local plaque = Instance.new("Frame")
+	plaque.Name = "Plaque"
+	plaque.BackgroundColor3 = Color3.fromRGB(48, 30, 86)
+	plaque.BackgroundTransparency = 0.12
+	plaque.BorderSizePixel = 0
+	plaque.Size = UDim2.fromScale(1, 1)
+	plaque.Parent = gui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.22, 0)
+	corner.Parent = plaque
+
+	local edge = Instance.new("UIStroke")
+	edge.Color = LABEL_INK
+	edge.Thickness = 3
+	edge.Parent = plaque
+
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
 	title.BackgroundTransparency = 1
-	title.Size = UDim2.fromScale(1, 0.6)
-	title.Font = Enum.Font.GothamBold
+	title.Position = UDim2.fromScale(0.04, 0.06)
+	title.Size = UDim2.fromScale(0.92, 0.5)
+	title.Font = Enum.Font.FredokaOne
 	title.TextScaled = true
 	title.TextColor3 = Color3.fromRGB(255, 255, 255)
-	title.TextStrokeTransparency = 0.35
+	title.TextStrokeTransparency = 1
 	title.Text = ""
-	title.Parent = gui
+	title.Parent = plaque
+
+	local titleEdge = Instance.new("UIStroke")
+	titleEdge.Color = LABEL_INK
+	titleEdge.Thickness = 2
+	titleEdge.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+	titleEdge.Parent = title
 
 	local subtitle = Instance.new("TextLabel")
 	subtitle.Name = "Subtitle"
 	subtitle.BackgroundTransparency = 1
-	subtitle.Position = UDim2.fromScale(0, 0.6)
-	subtitle.Size = UDim2.fromScale(1, 0.4)
-	subtitle.Font = Enum.Font.Gotham
+	subtitle.Position = UDim2.fromScale(0.04, 0.56)
+	subtitle.Size = UDim2.fromScale(0.92, 0.38)
+	subtitle.Font = Enum.Font.FredokaOne
 	subtitle.TextScaled = true
-	subtitle.TextColor3 = Color3.fromRGB(226, 232, 240)
-	subtitle.TextStrokeTransparency = 0.5
+	subtitle.TextColor3 = Color3.fromRGB(86, 240, 148)
+	subtitle.TextStrokeTransparency = 1
 	subtitle.Text = ""
-	subtitle.Parent = gui
+	subtitle.Parent = plaque
+
+	local subEdge = Instance.new("UIStroke")
+	subEdge.Color = LABEL_INK
+	subEdge.Thickness = 2
+	subEdge.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+	subEdge.Parent = subtitle
 
 	return gui, title, subtitle
 end
@@ -671,6 +737,23 @@ local function buildPlot(root: Folder, index: number): Plot
 	deskSub.Text = "Walk here to collect rent"
 	streetLight(desk, Color3.fromRGB(96, 220, 138), 20, 1.5)
 
+	local accent = PLOT_ACCENT[(index - 1) % #PLOT_ACCENT + 1]
+
+	--[[ A neon frame behind the board in the plot's own colour, and the reason
+	     the accent exists at all: from the middle of the square you are looking at
+	     twelve boards at once, and the colour is what lets you pick one out and
+	     run at it before you can read a word of it. It is on the lamp register, so
+	     it comes on with everything else at Lights Out. ]]
+	local signFrame = part({
+		Name = "SignFrame",
+		Size = Vector3.new(29, 15, 1),
+		CFrame = origin * CFrame.new(-32, 15, -11.6),
+		Color = accent,
+		Material = Enum.Material.Neon,
+		Parent = model,
+	})
+	streetLight(signFrame, accent, 26, 1.6)
+
 	-- Owner board, facing the square.
 	local sign = part({
 		Name = "Sign",
@@ -692,23 +775,72 @@ local function buildPlot(root: Folder, index: number): Plot
 	nameLabel.Text = "VACANT PLOT"
 	rentLabel.Text = "Nobody has claimed this one"
 
-	-- Room markers: where housed guests stand, in two rows on the forecourt.
+	--[[ Room podiums: where housed guests stand, in rows on the forecourt.
+
+	     These were flat translucent squares, and that was the single biggest
+	     thing the map was getting wrong. An empty slot you cannot see is not an
+	     invitation. A raised, numbered, brightly capped pedestal is -- a forecourt
+	     of empty podiums reads as a thing to fill, and somebody else's full one
+	     reads as a thing to rob, both from across the square.
+
+	     The cap is the marker PlotService pivots guests onto, so its top surface
+	     is load-bearing: a guest is placed 2.4 studs above the cap's centre and is
+	     4.4 tall, which lands its feet exactly on the cap. Move the cap and the
+	     guests move with it; change its height and they float or sink. ]]
 	local markers: { BasePart } = {}
+	local bases: { BasePart } = {}
 	local perRow = 12
+
 	for room = 1, GameConfig.BaseMaxRooms + 20 do
 		local row = math.floor((room - 1) / perRow)
 		local column = (room - 1) % perRow
-		local marker = part({
-			Name = `Room{room}`,
-			Size = Vector3.new(4.4, 0.4, 4.4),
-			CFrame = origin * CFrame.new(-33 + column * 6, 0.2, -6 - row * 7),
-			Color = Color3.fromRGB(88, 88, 96),
+		local x, z = -33 + column * 6, -6 - row * 7
+
+		local base = part({
+			Name = `RoomBase{room}`,
+			Size = Vector3.new(5, 1.6, 5),
+			CFrame = origin * CFrame.new(x, 0.8, z),
+			Color = Color3.fromRGB(38, 26, 62),
 			Material = Enum.Material.SmoothPlastic,
 			CanCollide = false,
-			Transparency = 0.5,
+			Parent = model,
+		})
+
+		local marker = part({
+			Name = `Room{room}`,
+			Size = Vector3.new(4.6, 0.4, 4.6),
+			CFrame = origin * CFrame.new(x, 1.8, z),
+			Color = accent,
+			Material = Enum.Material.SmoothPlastic,
+			CanCollide = false,
 			Parent = model,
 		})
 		marker:SetAttribute("Room", room)
+
+		-- The number, so a player can be told "room four" and find it.
+		local numberGui = Instance.new("BillboardGui")
+		numberGui.Name = "RoomNumber"
+		numberGui.Size = UDim2.fromScale(2.4, 2.4)
+		numberGui.StudsOffsetWorldSpace = Vector3.new(0, 0.6, 0)
+		numberGui.MaxDistance = 120
+		numberGui.Parent = marker
+
+		local numberLabel = Instance.new("TextLabel")
+		numberLabel.BackgroundTransparency = 1
+		numberLabel.Size = UDim2.fromScale(1, 1)
+		numberLabel.Font = Enum.Font.FredokaOne
+		numberLabel.TextScaled = true
+		numberLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+		numberLabel.Text = tostring(room)
+		numberLabel.Parent = numberGui
+
+		local numberEdge = Instance.new("UIStroke")
+		numberEdge.Color = LABEL_INK
+		numberEdge.Thickness = 2
+		numberEdge.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+		numberEdge.Parent = numberLabel
+
+		table.insert(bases, base)
 		table.insert(markers, marker)
 	end
 
@@ -723,6 +855,7 @@ local function buildPlot(root: Folder, index: number): Plot
 		desk = desk,
 		sign = sign,
 		roomMarkers = markers,
+		roomBases = bases,
 		nameLabel = nameLabel,
 		rentLabel = rentLabel,
 		vacancyLabel = vacancyLabel,
@@ -731,11 +864,13 @@ local function buildPlot(root: Folder, index: number): Plot
 		wallParts = wallParts,
 		roofParts = roofParts,
 		appliedRating = 0,
+		appliedRooms = -1,
 	}
 
 	-- Start every plot looking like a One Star, so a vacant lot is never wearing
 	-- the last owner's gold arch.
 	WorldBuilder.applyRating(plot, 1)
+	WorldBuilder.applyRooms(plot, GameConfig.StartingRooms)
 	return plot
 end
 
@@ -831,6 +966,44 @@ end
      and it early-returns when the rating has not moved. Hidden props keep
      CanCollide off as well as full transparency, so a Four Star cannot swim in a
      pool that is not there yet. ]]
+--[[ Shows only the podiums this motel actually has, plus a short row of dim
+     locked ones ahead of them.
+
+     Every plot is built with 44 podiums because rooms are bought one at a time
+     and rebuilding the forecourt on each purchase would be silly. Leaving all 44
+     visible is worse than silly though: a player with three rooms would be
+     looking at forty-one empty stands and reasonably conclude the game was
+     broken, or that they had been robbed blind.
+
+     The few dim ones ahead are deliberate. An upgrade you can see the shape of is
+     worth more than one described on a menu -- the next three stands are exactly
+     what the next three purchases give you. ]]
+local ROOM_PREVIEW = 3
+
+function WorldBuilder.applyRooms(plot: Plot, rooms: number)
+	rooms = math.max(0, math.floor(rooms))
+	if plot.appliedRooms == rooms then
+		return
+	end
+	plot.appliedRooms = rooms
+
+	for room, marker in plot.roomMarkers do
+		local base = plot.roomBases[room]
+		local owned = room <= rooms
+		local preview = not owned and room <= rooms + ROOM_PREVIEW
+
+		marker.Transparency = if owned then 0 elseif preview then 0.65 else 1
+		if base then
+			base.Transparency = if owned then 0 elseif preview then 0.75 else 1
+		end
+
+		local numberGui = marker:FindFirstChild("RoomNumber")
+		if numberGui then
+			(numberGui :: BillboardGui).Enabled = owned
+		end
+	end
+end
+
 function WorldBuilder.applyRating(plot: Plot, rating: number)
 	rating = math.clamp(math.floor(rating), 1, #RATING_LOOK)
 	if plot.appliedRating == rating then
@@ -930,11 +1103,15 @@ function WorldBuilder.buildGuestModel(guest: Guests.Guest, uid: string): Model
 		glow.Parent = body
 	end
 
-	local _, title, subtitle = billboard(body, 3.6, 8)
+	--[[ Name on top, income underneath. The income is the whole reason anybody
+	     looks at a guest -- it is what makes a forecourt read as a money machine
+	     and what makes somebody else's forecourt worth robbing. Showing the
+	     rarity there instead, as this did, buried the only number that matters. ]]
+	local _, title, subtitle = billboard(body, 3.9, 8)
 	title.Text = guest.name
 	title.TextColor3 = Guests.RarityColor[guest.rarity] or Color3.new(1, 1, 1)
 	subtitle.Name = "RentLabel"
-	subtitle.Text = guest.rarity
+	subtitle.Text = `${Format.short(guest.rent)}/s`
 
 	model.PrimaryPart = body
 	model:SetAttribute("Uid", uid)

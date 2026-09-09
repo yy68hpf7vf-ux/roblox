@@ -43,6 +43,18 @@ whole town switches over at once — every lamp, window and neon sign comes on a
 the fog closes to 620 studs, so you cannot read a distant motel sign and have to
 commit to a direction.
 
+**Room podiums.** Every housed guest stands on a numbered, brightly capped
+pedestal, and the three stands past the ones you own sit dimmed behind them. A
+forecourt of empty podiums reads as a thing to fill and somebody else's full one
+reads as a thing to rob, both from across the square -- and the dim ones ahead
+show you the shape of the next three purchases rather than describing them on a
+menu. `WorldBuilder.applyRooms` decides what is shown; all 44 exist from the
+start, because rooms are bought one at a time.
+
+**Every guest wears its income.** A plaque over each one shows its name and its
+$/s. It is the number that makes a forecourt read as a money machine and makes
+somebody else's worth a night, so it is in the world rather than only in a menu.
+
 **A town, not a testbed.** A ring road with dashed lines and street lamps, twelve
 two-storey motels with walkways, stairs, lit windows and a **VACANCY / NO VACANCY**
 board readable from across the square, and a central plaza with a stage, benches

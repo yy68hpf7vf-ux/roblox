@@ -17,6 +17,7 @@
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local GameConfig = require(Shared.Config.GameConfig)
 local Guests = require(Shared.Config.Guests)
 local Format = require(Shared.Util.Format)
 local Schema = require(Shared.Schema)
@@ -146,6 +147,9 @@ function PlotService.refreshSign(player: Player)
 	-- The building itself reflects the rating: paint, planters, awning, pool,
 	-- roof neon, beacon, arch. Early-returns unless the rating actually moved.
 	WorldBuilder.applyRating(plot, profile.rating)
+	-- Capacity, not profile.rooms: the +5 Rooms pass is real rooms, and a player
+	-- who bought it should see the stands they paid for.
+	WorldBuilder.applyRooms(plot, capacity)
 
 	plot.nameLabel.Text = `{player.DisplayName}'s Motel`
 	plot.rentLabel.Text = `${Format.short(rent)}/s  ·  {housed}/{capacity} rooms  ·  {profile.renovations}★`
@@ -185,6 +189,7 @@ end
 local function markVacant(plot: Plot)
 	-- Strip the last owner's upgrades back to a bare One Star.
 	WorldBuilder.applyRating(plot, 1)
+	WorldBuilder.applyRooms(plot, GameConfig.StartingRooms)
 	plot.nameLabel.Text = "VACANT PLOT"
 	plot.rentLabel.Text = "Nobody has claimed this one"
 	plot.vacancyLabel.Text = "VACANCY"
