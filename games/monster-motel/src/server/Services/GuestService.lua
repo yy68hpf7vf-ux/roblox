@@ -14,6 +14,7 @@ local Schema = require(Shared.Schema)
 
 local ArrivalService = require(script.Parent.ArrivalService)
 local EconomyService = require(script.Parent.EconomyService)
+local FeedService = require(script.Parent.FeedService)
 local QuestService = require(script.Parent.QuestService)
 local Remote = require(script.Parent.Remote)
 
@@ -55,8 +56,17 @@ function GuestService.give(player: Player, profile: Profile, guestId: string): (
 		room = room,
 	}
 	table.insert(profile.guests, owned)
-	EconomyService.markDirty(player)
 
+	-- Every route in goes through here -- checked in, stolen, a celebrity walked
+	-- home, a Signature restored -- so this is the one place the index needs to
+	-- learn about. Discovery is permanent; losing the guest later does not undo it.
+	if not profile.discovered[guestId] then
+		profile.discovered[guestId] = true
+		Remote.effect(player, "discovered", { guest = guestId })
+		FeedService.discovery(player, guestId)
+	end
+
+	EconomyService.markDirty(player)
 	return owned, room > 0
 end
 

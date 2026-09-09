@@ -35,6 +35,7 @@ local NightService = require(script.Parent.NightService)
 local MovementService = require(script.Parent.MovementService)
 local PlotService = require(script.Parent.PlotService)
 local QuestService = require(script.Parent.QuestService)
+local FeedService = require(script.Parent.FeedService)
 local Remote = require(script.Parent.Remote)
 local WorldBuilder = require(script.Parent.Parent.World.WorldBuilder)
 
@@ -192,6 +193,7 @@ local function settle(thief: Player, toThief: boolean, reason: string)
 						"bad"
 					)
 					Remote.effect(carry.victim, "lostGuest", { guest = carry.guestId, thief = thief.Name })
+					FeedService.theft(thief, carry.victim, carry.guestId)
 				end
 				return
 			end

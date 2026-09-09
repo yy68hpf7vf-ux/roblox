@@ -17,6 +17,7 @@ local Prestige = require(Shared.Config.Prestige)
 local Schema = require(Shared.Schema)
 
 local EconomyService = require(script.Parent.EconomyService)
+local FeedService = require(script.Parent.FeedService)
 local Remote = require(script.Parent.Remote)
 
 type Profile = Schema.Profile
@@ -67,6 +68,7 @@ function PrestigeService.renovate(player: Player, profile: Profile): (boolean, s
 
 	EconomyService.markDirty(player)
 	Remote.effect(player, "renovated", { stars = stars, renovations = profile.renovations })
+	FeedService.renovation(player, profile.renovations, stars)
 
 	return true,
 		`Renovation {profile.renovations}. You earned {stars} Star{if stars == 1 then "" else "s"}, `

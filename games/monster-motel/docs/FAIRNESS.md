@@ -86,6 +86,11 @@ That last rule is deliberately delayed until sunrise rather than instant. Handin
 it straight back would make stealing one pointless and would quietly be immunity
 after all.
 
+**And the claim is checkable in-game.** The Index lists all 45 guests with their
+rent, discovered or not, so a player can see for themselves that the best Mythic
+out-earns every Signature before they spend anything. A fairness claim only in a
+markdown file is a fairness claim nobody reads.
+
 ## What the store does sell
 
 Speed of your own progress, and guests that never top the free ones:

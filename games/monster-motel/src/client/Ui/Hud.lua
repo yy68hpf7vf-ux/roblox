@@ -29,6 +29,7 @@ local Hud = {}
 local NAV = {
 	{ id = "arrivals", label = "Arrivals" },
 	{ id = "guests", label = "Guests" },
+	{ id = "index", label = "Index" },
 	{ id = "motel", label = "Motel" },
 	{ id = "renovate", label = "Renovate" },
 	{ id = "daily", label = "Daily" },

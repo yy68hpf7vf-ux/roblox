@@ -143,6 +143,10 @@ function PlotService.refreshSign(player: Player)
 	local housed = EconomyService.housedCount(profile)
 	local capacity = EconomyService.housedCapacity(player, profile)
 
+	-- The building itself reflects the rating: paint, planters, awning, pool,
+	-- roof neon, beacon, arch. Early-returns unless the rating actually moved.
+	WorldBuilder.applyRating(plot, profile.rating)
+
 	plot.nameLabel.Text = `{player.DisplayName}'s Motel`
 	plot.rentLabel.Text = `${Format.short(rent)}/s  ·  {housed}/{capacity} rooms  ·  {profile.renovations}★`
 
@@ -179,6 +183,8 @@ function PlotService.refreshSign(player: Player)
 end
 
 local function markVacant(plot: Plot)
+	-- Strip the last owner's upgrades back to a bare One Star.
+	WorldBuilder.applyRating(plot, 1)
 	plot.nameLabel.Text = "VACANT PLOT"
 	plot.rentLabel.Text = "Nobody has claimed this one"
 	plot.vacancyLabel.Text = "VACANCY"

@@ -20,6 +20,7 @@ local Upgrades = require(Shared.Config.Upgrades)
 local Schema = require(Shared.Schema)
 
 local EconomyService = require(script.Parent.EconomyService)
+local FeedService = require(script.Parent.FeedService)
 local QuestService = require(script.Parent.QuestService)
 
 type Profile = Schema.Profile
@@ -61,6 +62,7 @@ function ShopService.buyRating(player: Player, profile: Profile): (boolean, stri
 
 	profile.rating = next.level
 	bought(player, profile)
+	FeedService.rating(player, next.level, next.name)
 	return true, `{next.name}. Better guests start pulling off the highway.`
 end
 

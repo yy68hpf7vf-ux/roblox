@@ -14,16 +14,19 @@ local Net = require(Shared.Net)
 
 local State = require(script.State)
 
+local Feed = require(script.Ui.Feed)
 local Hud = require(script.Ui.Hud)
 local Toast = require(script.Ui.Toast)
 
 local ArrivalsWindow = require(script.Ui.Windows.ArrivalsWindow)
 local DailyWindow = require(script.Ui.Windows.DailyWindow)
 local GuestsWindow = require(script.Ui.Windows.GuestsWindow)
+local IndexWindow = require(script.Ui.Windows.IndexWindow)
 local MotelWindow = require(script.Ui.Windows.MotelWindow)
 local RenovateWindow = require(script.Ui.Windows.RenovateWindow)
 local StoreWindow = require(script.Ui.Windows.StoreWindow)
 
+local FeedbackController = require(script.Controllers.FeedbackController)
 local RaidController = require(script.Controllers.RaidController)
 
 local player = Players.LocalPlayer
@@ -37,6 +40,8 @@ screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screen.Parent = playerGui
 
 Toast.mount(screen)
+Feed.mount(screen)
+FeedbackController.start(screen)
 
 -- ---------------------------------------------------------------- windows
 
@@ -69,6 +74,7 @@ end
 
 windows.arrivals = ArrivalsWindow.build(screen, closeAll)
 windows.guests = GuestsWindow.build(screen, closeAll)
+windows.index = IndexWindow.build(screen, closeAll)
 windows.motel = MotelWindow.build(screen, closeAll)
 windows.renovate = RenovateWindow.build(screen, closeAll)
 windows.daily = DailyWindow.build(screen, closeAll)
@@ -116,8 +122,30 @@ Net.event("Effect").OnClientEvent:Connect(function(name, payload)
 			RaidController.clearDoors()
 		end
 		hud.setBreakProgress(0, 0)
-	elseif name == "carrying" or name == "stoleGuest" then
+	elseif name == "carrying" then
 		hud.setBreakProgress(0, 0)
+	elseif name == "stoleGuest" then
+		hud.setBreakProgress(0, 0)
+		FeedbackController.onStole(body.guest)
+
+	-- Everything below is feel only: floating numbers, particles, screen flashes.
+	-- None of it changes state, so a missing or malformed field is harmless.
+	elseif name == "collected" then
+		FeedbackController.onCollected(body.amount or 0)
+	elseif name == "checkedIn" then
+		FeedbackController.onCheckedIn(body.guest)
+	elseif name == "discovered" then
+		FeedbackController.onDiscovered(body.guest)
+	elseif name == "beingRobbed" then
+		FeedbackController.onBeingRobbed(body.guest)
+	elseif name == "lostGuest" then
+		FeedbackController.onRobbed(body.guest)
+	elseif name == "renovated" then
+		FeedbackController.onRenovated(body.stars or 0)
+	elseif name == "celebrity" then
+		FeedbackController.onCelebrity(body.active == true)
+	elseif name == "feed" then
+		Feed.push(if type(body.text) == "string" then body.text else "", body.kind)
 	elseif name == "porterAlert" then
 		-- Night Porter. Level 1 is the toast the server already sent; level 2
 		-- also marks them.

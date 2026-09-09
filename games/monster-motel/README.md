@@ -62,6 +62,25 @@ a guest — see [docs/FAIRNESS.md](docs/FAIRNESS.md).
 "check in your first guest" through to "renovate once", then gets out of the way
 for good. The game is not self-explanatory without it.
 
+**A motel that visibly gets better.** Every star changes the walls, the roof and
+the material, and each one hangs something new off the building: planters at Two
+Star, an awning at Three, a pool with loungers at Four, roof neon at Five, a
+searchlight at Six, and a gold arch at Seven. It is the strongest motivator the
+genre has, and it is free — you can see what somebody else's money bought them from
+across the square, which is the whole reason anybody buys it.
+
+**An index of all 45 guests**, showing which you have ever owned. Discovery is
+permanent: renovating does not clear it and neither does losing one to a thief. An
+undiscovered row still shows its rarity and its rent, so it doubles as the price
+list a player reads before deciding whether the next star is worth it.
+
+**Feedback on the thing you do most.** Cash flies off you when you collect, a guest
+pops when it checks in, a new rarity bursts, and the screen goes red the instant
+somebody lifts a guest off your desk — the alarm that makes the chase window worth
+having. A ticker in the bottom-right reports the rest of the server: big thefts,
+renovations, rare finds. It is deliberately picky about what it reports, so the
+town feels inhabited rather than noisy.
+
 **Retention** — daily streak with a two-day grace window, a playtime ladder that
 ends when it says it does, three daily quests that reward defending as often as
 raiding, codes, and global leaderboards on signs in the square.
@@ -140,9 +159,10 @@ src/server/Services/   One responsibility each
   SignatureService     Robux guests, and giving them back after a bad night
   AmbienceService      Sky, fog, and switching the whole town on at Lights Out
   SafetyService        Nobody falls out of the world
+  FeedService          What the rest of the server is up to, filtered hard
 src/replicatedfirst/   The loading screen
 src/server/World/      Builds the town at runtime
-src/client/            HUD, six windows, the raid controller
+src/client/            HUD, seven windows, the raid and feedback controllers
 tools/                 Self-test assertions and the balance simulation
 docs/FAIRNESS.md       Why nothing sold affects a raid, and how that is enforced
 docs/BALANCE.md        The economy in one formula, and how to re-tune it

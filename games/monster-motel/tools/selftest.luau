@@ -735,6 +735,7 @@ do
 	equal(template.rooms, GameConfig.StartingRooms, "Schema: a new motel starts with the starting rooms")
 	equal(template.version, Schema.Version, "Schema: template version must match Schema.Version")
 	equal(template.objective, 1, "Schema: a new profile starts on the first objective")
+	equal(next(template.discovered), nil, "Schema: a new profile has met nobody")
 
 	-- The two upgrade maps must be separate and must cover their own configs.
 	for _, upgrade in Upgrades.List do
@@ -776,6 +777,10 @@ do
 		{ guest = "grubling", price = 10, takenAt = 0 },
 		{ guest = "a_guest_that_was_deleted", price = 10, takenAt = 0 },
 	}
+	broken.discovered = {
+		grubling = true,
+		a_guest_that_was_deleted = true,
+	}
 
 	Schema.sanitise(broken)
 
@@ -786,6 +791,12 @@ do
 	equal(broken.rooms, GameConfig.StartingRooms, "sanitise: rooms should never drop below the starting count")
 	equal(#broken.guests, 3, "sanitise: a guest whose id no longer exists should be dropped")
 	equal(#broken.arrivals, 1, "sanitise: an arrival for a deleted guest should be dropped")
+	equal(broken.discovered.grubling, true, "sanitise: a real discovery must survive")
+	equal(
+		broken.discovered.a_guest_that_was_deleted,
+		nil,
+		"sanitise: a discovery for a guest that no longer exists should be pruned"
+	)
 
 	local occupied = {}
 	local stored = 0

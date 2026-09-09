@@ -18,10 +18,20 @@
 	  * **Everything that lights up is collected into `built.lamps`.** Lights Out
 	    is the most important moment in the game, so AmbienceService switches the
 	    whole town over at once rather than the sky quietly changing colour.
+	  * **A motel visibly becomes a better motel.** Every plot is built with the
+	    props for all seven ratings already in place and hidden; `applyRating`
+	    reveals them and repaints the walls. A One Star is bare grey concrete with
+	    a dim sign. A Seven Star has a pool, an awning, roof neon and gold trim.
+
+	    That last one is doing real work. Rating is the most expensive thing in the
+	    game and, until it changed the building, buying it altered nothing you could
+	    see. It also gives raiders information at a glance: the smartest motel on
+	    the ring is the one worth a night.
 ]]
 
 local Guests = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Config.Guests)
 local GameConfig = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Config.GameConfig)
+local Ratings = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Config.Ratings)
 
 local WorldBuilder = {}
 
@@ -40,6 +50,16 @@ local WALL = Color3.fromRGB(206, 186, 150)
 local WALL_TRIM = Color3.fromRGB(140, 84, 72)
 local ROOF = Color3.fromRGB(112, 68, 60)
 
+--[[ A prop that only exists above a certain Motel Rating. Built once, hidden,
+     and revealed by applyRating -- cheaper and far less error-prone than tearing
+     geometry down and rebuilding it every time somebody upgrades. ]]
+export type TierProp = {
+	part: BasePart,
+	minRating: number,
+	transparency: number,
+	collides: boolean,
+}
+
 export type Plot = {
 	index: number,
 	model: Model,
@@ -52,7 +72,31 @@ export type Plot = {
 	rentLabel: TextLabel,
 	vacancyLabel: TextLabel,
 	vacancyLight: SurfaceLight,
+	-- Props revealed as the rating climbs, and the walls that get repainted.
+	tierProps: { TierProp },
+	wallParts: { BasePart },
+	roofParts: { BasePart },
+	appliedRating: number,
 }
+
+--[[ How the building is painted at each rating. Grey and utilitarian at the
+     bottom, warm and expensive at the top. ]]
+local RATING_LOOK = {
+	{ wall = Color3.fromRGB(158, 156, 150), roof = Color3.fromRGB(92, 88, 84), material = Enum.Material.Concrete },
+	{ wall = Color3.fromRGB(186, 176, 158), roof = Color3.fromRGB(104, 74, 66), material = Enum.Material.Concrete },
+	{ wall = Color3.fromRGB(206, 186, 150), roof = Color3.fromRGB(112, 68, 60), material = Enum.Material.Brick },
+	{ wall = Color3.fromRGB(214, 198, 164), roof = Color3.fromRGB(120, 66, 58), material = Enum.Material.Brick },
+	{ wall = Color3.fromRGB(226, 212, 180), roof = Color3.fromRGB(96, 62, 96), material = Enum.Material.Marble },
+	{ wall = Color3.fromRGB(236, 224, 196), roof = Color3.fromRGB(74, 58, 112), material = Enum.Material.Marble },
+	{ wall = Color3.fromRGB(248, 238, 210), roof = Color3.fromRGB(126, 96, 40), material = Enum.Material.Marble },
+}
+
+-- Adding a rating to Config/Ratings without a look here would silently leave the
+-- top star looking like the one below it, which is the whole point of the tier.
+assert(
+	#RATING_LOOK == Ratings.Max,
+	`WorldBuilder: {#RATING_LOOK} rating looks for {Ratings.Max} ratings -- add one per rating`
+)
 
 export type Built = {
 	root: Folder,
@@ -64,6 +108,35 @@ export type Built = {
 }
 
 local lamps: { Light } = {}
+
+--[[ Whether the town is currently lit. Set by AmbienceService, read by
+     applyRating so a prop revealed *during* the night lights up immediately
+     instead of waiting for the next phase change. A plain flag rather than a
+     require, because WorldBuilder must not depend on a service. ]]
+WorldBuilder.nightMode = false
+
+-- Filled by buildPlot while the current plot is under construction.
+local tierProps: { TierProp } = {}
+local wallParts: { BasePart } = {}
+local roofParts: { BasePart } = {}
+
+--[[ Registers a prop that only appears at `minRating` and above. Records the
+     transparency and collision it should have when visible, so revealing it
+     restores the right values rather than guessing at zero. ]]
+local function tierProp(instance: BasePart, minRating: number)
+	-- A prop gated above the top rating can never appear, and would be invisible
+	-- rather than obviously broken.
+	assert(
+		minRating >= 1 and minRating <= Ratings.Max,
+		`WorldBuilder: tier prop gated at rating {minRating}, which is outside 1..{Ratings.Max}`
+	)
+	table.insert(tierProps, {
+		part = instance,
+		minRating = minRating,
+		transparency = instance.Transparency,
+		collides = instance.CanCollide,
+	})
+end
 
 local function part(props: { [string]: any }): Part
 	local instance = Instance.new("Part")
@@ -221,14 +294,14 @@ local function buildMotelBlock(model: Model, origin: CFrame)
 	for floor = 0, 1 do
 		local y = 8 + floor * 15
 
-		part({
+		table.insert(wallParts, part({
 			Name = "Wall",
 			Size = Vector3.new(78, 14, 30),
 			CFrame = origin * CFrame.new(0, y, -36),
 			Color = WALL,
 			Material = Enum.Material.Concrete,
 			Parent = model,
-		})
+		}))
 
 		-- Doors and windows along the front, so the building reads as rooms.
 		for slot = -3, 3 do
@@ -288,14 +361,189 @@ local function buildMotelBlock(model: Model, origin: CFrame)
 		end
 	end
 
-	part({
+	table.insert(roofParts, part({
 		Name = "Roof",
 		Size = Vector3.new(84, 2, 36),
 		CFrame = origin * CFrame.new(0, 30.5, -36),
 		Color = ROOF,
 		Material = Enum.Material.Slate,
 		Parent = model,
+	}))
+end
+
+-- ---------------------------------------------------------------- tier props
+
+--[[ Everything a motel grows as its rating climbs. All of it is built now and
+     hidden; applyRating decides what is visible. ]]
+local function buildTierProps(model: Model, origin: CFrame)
+	-- 2: planters along the forecourt edge.
+	for slot = -2, 2 do
+		local planter = part({
+			Name = "Planter",
+			Size = Vector3.new(9, 2.4, 4),
+			CFrame = origin * CFrame.new(slot * 13, 1.2, -2),
+			Color = Color3.fromRGB(120, 96, 72),
+			Material = Enum.Material.WoodPlanks,
+			Parent = model,
+		})
+		tierProp(planter, 2)
+
+		local shrub = part({
+			Name = "Shrub",
+			Size = Vector3.new(7, 3.2, 3),
+			CFrame = origin * CFrame.new(slot * 13, 3.6, -2),
+			Color = Color3.fromRGB(86, 132, 74),
+			Material = Enum.Material.Grass,
+			CanCollide = false,
+			Parent = model,
+		})
+		tierProp(shrub, 2)
+	end
+
+	-- 3: an awning over the ground-floor walkway.
+	local awning = part({
+		Name = "Awning",
+		Size = Vector3.new(80, 0.8, 10),
+		CFrame = origin * CFrame.new(0, 15.2, -16),
+		Color = Color3.fromRGB(178, 62, 58),
+		Material = Enum.Material.Fabric,
+		Parent = model,
 	})
+	tierProp(awning, 3)
+
+	for slot = -3, 3 do
+		local post = part({
+			Name = "AwningPost",
+			Size = Vector3.new(0.6, 14, 0.6),
+			CFrame = origin * CFrame.new(slot * 12, 8, -11.5),
+			Color = Color3.fromRGB(70, 72, 80),
+			Material = Enum.Material.Metal,
+			Parent = model,
+		})
+		tierProp(post, 3)
+	end
+
+	-- 4: the pool. The most visible single upgrade in the game.
+	local surround = part({
+		Name = "PoolSurround",
+		Size = Vector3.new(38, 1.2, 26),
+		CFrame = origin * CFrame.new(38, 0.6, -30),
+		Color = Color3.fromRGB(224, 220, 208),
+		Material = Enum.Material.Pebble,
+		Parent = model,
+	})
+	tierProp(surround, 4)
+
+	local water = part({
+		Name = "PoolWater",
+		Size = Vector3.new(32, 1.4, 20),
+		CFrame = origin * CFrame.new(38, 1.1, -30),
+		Color = Color3.fromRGB(88, 190, 232),
+		Material = Enum.Material.Glass,
+		Transparency = 0.35,
+		CanCollide = false,
+		Parent = model,
+	})
+	tierProp(water, 4)
+	local poolGlow = Instance.new("PointLight")
+	poolGlow.Color = Color3.fromRGB(120, 210, 255)
+	poolGlow.Range = 30
+	poolGlow.Brightness = 2
+	poolGlow.Enabled = false
+	poolGlow.Parent = water
+	table.insert(lamps, poolGlow)
+
+	for slot = -1, 1, 2 do
+		local lounger = part({
+			Name = "Lounger",
+			Size = Vector3.new(4, 1, 8),
+			CFrame = origin * CFrame.new(38 + slot * 13, 1.8, -30),
+			Color = Color3.fromRGB(240, 240, 236),
+			Material = Enum.Material.Plastic,
+			Parent = model,
+		})
+		tierProp(lounger, 4)
+	end
+
+	-- 5: a neon strip along the roofline.
+	local strip = part({
+		Name = "RoofNeon",
+		Size = Vector3.new(84, 0.8, 1.2),
+		CFrame = origin * CFrame.new(0, 32, -18.5),
+		Color = Color3.fromRGB(255, 122, 200),
+		Material = Enum.Material.Neon,
+		CanCollide = false,
+		Parent = model,
+	})
+	tierProp(strip, 5)
+	local stripGlow = Instance.new("PointLight")
+	stripGlow.Color = Color3.fromRGB(255, 122, 200)
+	stripGlow.Range = 40
+	stripGlow.Brightness = 2.4
+	stripGlow.Enabled = false
+	stripGlow.Parent = strip
+	table.insert(lamps, stripGlow)
+
+	-- 6: a rooftop beacon, visible from the far side of town.
+	local mast = part({
+		Name = "BeaconMast",
+		Size = Vector3.new(1.4, 14, 1.4),
+		CFrame = origin * CFrame.new(-30, 38, -36),
+		Color = Color3.fromRGB(58, 60, 68),
+		Material = Enum.Material.Metal,
+		Parent = model,
+	})
+	tierProp(mast, 6)
+
+	local beacon = part({
+		Name = "Beacon",
+		Size = Vector3.new(5, 5, 5),
+		CFrame = origin * CFrame.new(-30, 46, -36),
+		Color = Color3.fromRGB(120, 232, 255),
+		Material = Enum.Material.Neon,
+		CanCollide = false,
+		Parent = model,
+	})
+	tierProp(beacon, 6)
+	local beaconGlow = Instance.new("PointLight")
+	beaconGlow.Color = Color3.fromRGB(120, 232, 255)
+	beaconGlow.Range = 60
+	beaconGlow.Brightness = 4
+	beaconGlow.Enabled = false
+	beaconGlow.Parent = beacon
+	table.insert(lamps, beaconGlow)
+
+	-- 7: a gold entrance arch. Nothing subtle about the last rating.
+	for side = -1, 1, 2 do
+		local column = part({
+			Name = "ArchColumn",
+			Size = Vector3.new(4, 26, 4),
+			CFrame = origin * CFrame.new(side * 22, 13, 14),
+			Color = Color3.fromRGB(232, 190, 96),
+			Material = Enum.Material.Metal,
+			Reflectance = 0.25,
+			Parent = model,
+		})
+		tierProp(column, 7)
+	end
+
+	local arch = part({
+		Name = "ArchTop",
+		Size = Vector3.new(48, 5, 5),
+		CFrame = origin * CFrame.new(0, 28, 14),
+		Color = Color3.fromRGB(232, 190, 96),
+		Material = Enum.Material.Metal,
+		Reflectance = 0.25,
+		Parent = model,
+	})
+	tierProp(arch, 7)
+	local archGlow = Instance.new("PointLight")
+	archGlow.Color = Color3.fromRGB(255, 216, 130)
+	archGlow.Range = 44
+	archGlow.Brightness = 3
+	archGlow.Enabled = false
+	archGlow.Parent = arch
+	table.insert(lamps, archGlow)
 end
 
 --[[ The lit VACANCY board. It is the single most useful object on the map for a
@@ -359,6 +607,11 @@ local function buildPlot(root: Folder, index: number): Plot
 	model.Name = `Plot{index}`
 	model.Parent = root
 
+	-- These collect while this one plot is under construction.
+	tierProps = {}
+	wallParts = {}
+	roofParts = {}
+
 	part({
 		Name = "Ground",
 		Size = PLOT_SIZE,
@@ -382,6 +635,7 @@ local function buildPlot(root: Folder, index: number): Plot
 	end
 
 	buildMotelBlock(model, origin)
+	buildTierProps(model, origin)
 	local vacancyLabel, vacancyLight = buildVacancySign(model, origin)
 
 	-- The door thieves have to break. Named so TheftService can find it.
@@ -461,7 +715,7 @@ local function buildPlot(root: Folder, index: number): Plot
 	lampPost(model, (origin * CFrame.new(-52, 0, 4)).Position)
 	lampPost(model, (origin * CFrame.new(52, 0, 4)).Position)
 
-	return {
+	local plot: Plot = {
 		index = index,
 		model = model,
 		origin = origin,
@@ -473,7 +727,16 @@ local function buildPlot(root: Folder, index: number): Plot
 		rentLabel = rentLabel,
 		vacancyLabel = vacancyLabel,
 		vacancyLight = vacancyLight,
+		tierProps = tierProps,
+		wallParts = wallParts,
+		roofParts = roofParts,
+		appliedRating = 0,
 	}
+
+	-- Start every plot looking like a One Star, so a vacant lot is never wearing
+	-- the last owner's gold arch.
+	WorldBuilder.applyRating(plot, 1)
+	return plot
 end
 
 -- ---------------------------------------------------------------- the square
@@ -558,6 +821,46 @@ local function buildSquare(root: Folder): (BasePart, BasePart)
 	spawn.Parent = model
 
 	return square, stage
+end
+
+-- ---------------------------------------------------------------- rating look
+
+--[[ Repaints a motel and reveals the props its rating has earned.
+
+     Cheap enough to call on every state push: it is a handful of property writes
+     and it early-returns when the rating has not moved. Hidden props keep
+     CanCollide off as well as full transparency, so a Four Star cannot swim in a
+     pool that is not there yet. ]]
+function WorldBuilder.applyRating(plot: Plot, rating: number)
+	rating = math.clamp(math.floor(rating), 1, #RATING_LOOK)
+	if plot.appliedRating == rating then
+		return
+	end
+	plot.appliedRating = rating
+
+	local look = RATING_LOOK[rating]
+
+	for _, wall in plot.wallParts do
+		wall.Color = look.wall
+		wall.Material = look.material
+	end
+	for _, roof in plot.roofParts do
+		roof.Color = look.roof
+	end
+
+	for _, prop in plot.tierProps do
+		local visible = rating >= prop.minRating
+		prop.part.Transparency = if visible then prop.transparency else 1
+		prop.part.CanCollide = visible and prop.collides
+		prop.part.CanQuery = visible
+		for _, light in prop.part:GetChildren() do
+			if light:IsA("Light") then
+				-- A pool bought at midnight should be lit at midnight, so this
+				-- reads the current phase rather than waiting for the next one.
+				light.Enabled = visible and WorldBuilder.nightMode
+			end
+		end
+	end
 end
 
 -- ---------------------------------------------------------------- entry

@@ -117,9 +117,17 @@ local function applyPhase(night: boolean, instant: boolean)
 		}):Play()
 	end
 
-	-- The whole town, at once.
+	-- Publish the phase so WorldBuilder.applyRating can light a prop revealed
+	-- mid-night rather than leaving it dark until dawn.
+	WorldBuilder.nightMode = night
+
+	-- The whole town, at once -- except anything hanging off a prop the motel has
+	-- not earned yet. A hidden pool must not glow.
 	for _, light in lamps do
-		if light.Parent then
+		local host = light.Parent
+		if host and host:IsA("BasePart") then
+			light.Enabled = night and host.Transparency < 1
+		elseif host then
 			light.Enabled = night
 		end
 	end

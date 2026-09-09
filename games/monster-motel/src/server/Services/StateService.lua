@@ -123,6 +123,7 @@ function StateService.build(player: Player, profile: Profile): { [string]: any }
 		productAmounts = productAmounts(player, profile),
 
 		codes = profile.codes,
+		discovered = profile.discovered,
 		stats = profile.stats,
 		settings = profile.settings,
 

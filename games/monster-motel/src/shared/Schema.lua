@@ -53,6 +53,10 @@ export type Profile = {
 
 	guests: { OwnedGuest },
 	nextGuestUid: number,
+	--[[ Every guest id the player has ever owned, even briefly. Never cleared --
+	     not by a renovation, and not by losing one to a thief. A collection you
+	     can be robbed of is not a collection. ]]
+	discovered: { [string]: boolean },
 
 	arrivals: { ArrivalSlot },
 	nextArrivalAt: number,
@@ -112,6 +116,7 @@ Schema.Template = {
 
 	guests = {},
 	nextGuestUid = 1,
+	discovered = {},
 
 	arrivals = {},
 	nextArrivalAt = 0,
@@ -200,6 +205,17 @@ function Schema.sanitise(profile: Profile)
 		end
 	end
 	profile.guests = kept
+
+	-- Discovery is the one table that only ever grows, so it is the one worth
+	-- pruning: an id for a guest that has since been cut from the config would
+	-- sit in the save forever and never be read by anything.
+	local discovered: { [string]: boolean } = {}
+	for id, seen in profile.discovered or {} do
+		if seen == true and Guests.ById[id] then
+			discovered[id] = true
+		end
+	end
+	profile.discovered = discovered
 
 	-- Arrivals referring to removed guests would render as blank buttons.
 	local arrivals: { ArrivalSlot } = {}

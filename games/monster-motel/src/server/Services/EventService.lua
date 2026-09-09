@@ -23,6 +23,7 @@ local Format = require(Shared.Util.Format)
 local GameConfig = require(Shared.Config.GameConfig)
 local Guests = require(Shared.Config.Guests)
 
+local FeedService = require(script.Parent.FeedService)
 local Remote = require(script.Parent.Remote)
 local TheftService = require(script.Parent.TheftService)
 local WorldBuilder = require(script.Parent.Parent.World.WorldBuilder)
@@ -166,6 +167,7 @@ local function onDelivered(player: Player, guestId: string)
 			.. `+${Format.short(if guest then guest.rent else 0)}/s`,
 		"good"
 	)
+	FeedService.celebrity(player, guestId)
 	setStageText("TOWN SQUARE", "A celebrity checks in every 10 minutes")
 	despawn()
 end
