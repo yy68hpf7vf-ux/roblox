@@ -35,22 +35,37 @@ AmbienceService.Sounds = {
 	nightLoop = 0,
 }
 
+--[[ Ambient is in here, not just OutdoorAmbient, and that matters more than it
+     looks. Ambient is flat fill applied to every surface no matter where the sun
+     is -- so a high one washes the day out by erasing shadow, and worse, it sets
+     a floor on how dark night can ever get. Lights Out is the game's best moment
+     and it cannot happen underneath a permanent 70/66/82 of fill. ]]
 local DAY = {
 	ClockTime = 14.5,
-	Brightness = 2.2,
-	OutdoorAmbient = Color3.fromRGB(122, 118, 140),
+	Brightness = 2.6,
+	Ambient = Color3.fromRGB(26, 24, 38),
+	OutdoorAmbient = Color3.fromRGB(108, 106, 128),
 	FogColor = Color3.fromRGB(178, 190, 210),
 	FogEnd = 2600,
+	-- Atmosphere, tuned with the rest of the phase rather than left on one setting
+	-- for both. Haze is the knob that whitens everything, so it stays low by day.
+	Density = 0.3,
+	Haze = 0.2,
+	AtmosphereColor = Color3.fromRGB(206, 204, 200),
 }
 
 local NIGHT = {
 	ClockTime = 0.4,
-	Brightness = 0.5,
-	OutdoorAmbient = Color3.fromRGB(44, 42, 72),
+	Brightness = 0.4,
+	Ambient = Color3.fromRGB(12, 11, 24),
+	OutdoorAmbient = Color3.fromRGB(38, 36, 64),
 	FogColor = Color3.fromRGB(26, 26, 44),
 	-- Fog is the real mechanic here: at night you cannot read a motel sign from
 	-- across the map, so raiders have to commit to a direction.
 	FogEnd = 620,
+	Density = 0.42,
+	Haze = 0.7,
+	AtmosphereColor = Color3.fromRGB(84, 86, 124),
 }
 
 local function buildSky()
@@ -67,18 +82,23 @@ local function buildSky()
 
 	local atmosphere = Instance.new("Atmosphere")
 	atmosphere.Name = "Atmosphere"
-	atmosphere.Density = 0.32
-	atmosphere.Haze = 1.2
-	atmosphere.Glare = 0.2
-	atmosphere.Color = Color3.fromRGB(210, 206, 200)
-	atmosphere.Decay = Color3.fromRGB(120, 124, 150)
+	atmosphere.Density = DAY.Density
+	atmosphere.Haze = DAY.Haze
+	-- Glare blooms the sun itself. Left off: with a bright sky and a bloom pass
+	-- already running it is the difference between a warm scene and a white one.
+	atmosphere.Glare = 0
+	atmosphere.Color = DAY.AtmosphereColor
+	atmosphere.Decay = Color3.fromRGB(112, 118, 146)
 	atmosphere.Parent = Lighting
 
+	--[[ Threshold above 1 on purpose. Below it, ordinary lit surfaces -- a pavement
+	     apron, a pale motel wall -- cross the line and bloom, and the whole scene
+	     turns into a white sheet. Only genuine highlights should glow. ]]
 	local bloom = Instance.new("BloomEffect")
 	bloom.Name = "Bloom"
-	bloom.Intensity = 0.5
-	bloom.Size = 20
-	bloom.Threshold = 1.4
+	bloom.Intensity = 0.35
+	bloom.Size = 24
+	bloom.Threshold = 2.2
 	bloom.Parent = Lighting
 end
 
@@ -104,6 +124,7 @@ local function applyPhase(night: boolean, instant: boolean)
 	TweenService:Create(Lighting, info, {
 		ClockTime = target.ClockTime,
 		Brightness = target.Brightness,
+		Ambient = target.Ambient,
 		OutdoorAmbient = target.OutdoorAmbient,
 		FogColor = target.FogColor,
 		FogEnd = target.FogEnd,
@@ -112,8 +133,9 @@ local function applyPhase(night: boolean, instant: boolean)
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
 	if atmosphere then
 		TweenService:Create(atmosphere, info, {
-			Density = if night then 0.42 else 0.32,
-			Color = if night then Color3.fromRGB(90, 92, 130) else Color3.fromRGB(210, 206, 200),
+			Density = target.Density,
+			Haze = target.Haze,
+			Color = target.AtmosphereColor,
 		}):Play()
 	end
 
@@ -146,8 +168,11 @@ function AmbienceService.start(built: WorldBuilder.Built)
 	Lighting.GlobalShadows = true
 	Lighting.Technology = Enum.Technology.ShadowMap
 	Lighting.FogStart = 80
-	Lighting.EnvironmentDiffuseScale = 0.4
-	Lighting.EnvironmentSpecularScale = 0.3
+	-- Environment light is another flat fill. Dialled back for the same reason as
+	-- Ambient: it is light that casts nothing and hides the shape of the town.
+	Lighting.EnvironmentDiffuseScale = 0.25
+	Lighting.EnvironmentSpecularScale = 0.2
+	Lighting.ExposureCompensation = 0
 
 	buildSky()
 
