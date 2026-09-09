@@ -97,12 +97,34 @@ not lose their raid to a misstep).
 
 ## Running it
 
+There is no `.rbxl` in this repo on purpose -- the whole game, town included, is
+built from these files at runtime, so the source is the game. You turn it into a
+place file with [Rojo](https://rojo.space).
+
+**Install Rojo** (once):
+
 ```bash
-cd games/monster-motel
-rojo build -o motel.rbxl
+# macOS / Linux, with Homebrew:
+brew install rojo
+# or download the binary for your OS from github.com/rojo-rbx/rojo/releases
+# and put it somewhere on your PATH. Windows also has an installer there.
 ```
 
-Open `motel.rbxl` in Studio and press Play. Then:
+**Build the place:**
+
+```bash
+cd games/monster-motel
+rojo build -o MonsterMotel.rbxl
+```
+
+Double-click `MonsterMotel.rbxl` to open it in Studio, and press Play.
+
+If you would rather have Studio update live as you edit these files, install the
+**Rojo plugin** from the Studio toolbox, run `rojo serve` in this folder, and hit
+Connect in the plugin. That is the better setup while you are changing things; the
+`build` above is the better one for just looking at it.
+
+Once it opens:
 
 1. **Publish the place** (File → Publish to Roblox As…) and **enable API
    Services** (File → Game Settings → Security). DataStores need both; a local
@@ -120,7 +142,7 @@ The town has 12 plots, so set MaxPlayers to 12 or raise `WorldBuilder.PlotCount`
 ```bash
 tools/check.sh                                          # from the repo root, both games
 python3 tools/check_requires.py games/monster-motel     # require graph
-python3 tools/selftest.py <luau> games/monster-motel    # 1,126 config assertions
+python3 tools/selftest.py <luau> games/monster-motel    # 1,129 config assertions
 python3 games/monster-motel/tools/balance.py            # progression simulation
 ```
 
