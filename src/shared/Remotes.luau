@@ -10,10 +10,15 @@ local FOLDER_NAME = "Remotes"
 local EVENTS = {
 	"DataUpdate", -- server -> client: partial data changes
 	"Notify", -- server -> client: toast message
+	"TargetBreakable", -- client -> server: start hitting an object (string id) or stop (nil)
+	"BreakableHit", -- server -> all clients: (id, damage, healthFraction, position)
+	"BreakableBroken", -- server -> all clients: (position, color, size)
+	"CoinReward", -- server -> client: (position, amount) for the player who earned it
 }
 
 local FUNCTIONS = {
 	"GetSnapshot", -- client -> server: full copy of the player's data
+	"PetAction", -- client -> server: (action, petId?) -> (ok, message)
 }
 
 local Remotes = {}

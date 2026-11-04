@@ -1,4 +1,4 @@
---!strict
+--!nonstrict
 -- Main HUD. Phase 1: Coin display. More buttons are added in later phases.
 
 local Players = game:GetService("Players")
@@ -11,11 +11,38 @@ local NumberFormat = require(Shared.Util.NumberFormat)
 local DataController = require(script.Parent.DataController)
 
 local HUDController = {}
+local toastGui: ScreenGui? = nil
 
 local function corner(parent: Instance, radius: number)
 	local c = Instance.new("UICorner")
 	c.CornerRadius = UDim.new(0, radius)
 	c.Parent = parent
+end
+
+-- Small message that fades after a couple of seconds.
+function HUDController.toast(text: string)
+	if not toastGui then
+		return
+	end
+	local label = Instance.new("TextLabel")
+	label.AnchorPoint = Vector2.new(0.5, 1)
+	label.Position = UDim2.new(0.5, 0, 0.85, 0)
+	label.Size = UDim2.new(0, 360, 0, 36)
+	label.BackgroundColor3 = Color3.fromRGB(30, 30, 60)
+	label.BackgroundTransparency = 0.15
+	label.Font = Enum.Font.FredokaOne
+	label.TextSize = 20
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.Text = text
+	label.Parent = toastGui
+	corner(label, 10)
+	TweenService:Create(label, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { Position = UDim2.new(0.5, 0, 0.8, 0) }):Play()
+	task.delay(2.2, function()
+		local fade = TweenService:Create(label, TweenInfo.new(0.5), { BackgroundTransparency = 1, TextTransparency = 1 })
+		fade:Play()
+		fade.Completed:Wait()
+		label:Destroy()
+	end)
 end
 
 function HUDController.init()
@@ -27,6 +54,7 @@ function HUDController.init()
 	gui.IgnoreGuiInset = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
+	toastGui = gui
 
 	local panel = Instance.new("Frame")
 	panel.Name = "CoinPanel"

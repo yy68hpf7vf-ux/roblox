@@ -12,6 +12,12 @@ return {
 	-- Inventory
 	StartingInventoryCapacity = 50,
 
+	-- Breaking objects
+	DamageTickSeconds = 0.5, -- pets hit every tick; damage per tick = total equipped pet power
+	TargetRange = 45, -- how far away a player may start targeting an object
+	StopRange = 75, -- targeting is dropped beyond this distance
+	AutoTargetRange = 25, -- client auto-targets the nearest object within this range
+
 	-- Data saving
 	AutosaveSeconds = 60,
 }

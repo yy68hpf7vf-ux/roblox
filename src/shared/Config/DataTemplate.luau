@@ -7,8 +7,11 @@ local Economy = require(script.Parent.Economy)
 return {
 	Version = 1,
 	Coins = Economy.StarterCoins,
-	Pets = {}, -- list of { Id = string, PetName = string, Variant = string, Locked = bool, Favorite = bool }
-	Equipped = {}, -- list of pet Ids
+	Pets = {}, -- dictionary: [petId] = { Name = string, Variant = string, Locked = bool, Favorite = bool, Obtained = number }
+	Equipped = {}, -- array of pet ids
+	Flags = {
+		StarterGiven = false,
+	},
 	PetSlots = Economy.StartingPetSlots,
 	InventoryCapacity = Economy.StartingInventoryCapacity,
 	UnlockedWorlds = { "DynastyMeadows" },

@@ -231,6 +231,12 @@ function DataService.waitFor(player: Player): { [string]: any }?
 	return nil
 end
 
+-- False when the player is playing on temporary, never-saved data (Studio without API access).
+function DataService.canSave(player: Player): boolean
+	local profile = profiles[player]
+	return profile ~= nil and profile.CanSave
+end
+
 function DataService.markDirty(player: Player)
 	local profile = profiles[player]
 	if profile then
