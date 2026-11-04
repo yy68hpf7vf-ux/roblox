@@ -15,3 +15,11 @@ After that, anything pushed to `main` appears in Studio automatically.
 - `src/server` -> ServerScriptService.Server
 - `src/client` -> StarterPlayer.StarterPlayerScripts.Client
 - `src/shared` -> ReplicatedStorage.Shared
+
+## Pet Dynasty development status
+- **Phase 1 (foundation)**: data saving with session locking, Coin service, remotes, config, HUD.
+  - `src/shared/Config/*` - economy, rarities, variants, default save data (tune numbers here).
+  - `src/server/Services/*` - DataService, CoinService, RateLimiter.
+  - `src/client/Controllers/*` - DataController (mirrors server data), HUDController.
+- In Studio, enable **Game Settings > Security > Enable Studio Access to API Services** to test saving.
+  Without it the game runs with temporary, unsaved data.
